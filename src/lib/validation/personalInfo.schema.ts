@@ -8,9 +8,9 @@ export const personalInfoSchema = [
   check('passportNumber').notEmpty().withMessage('Passport number is required'),
   check('passportIssueDate').isISO8601().withMessage('Invalid passport issue date'),
   check('passportExpiryDate').isISO8601().withMessage('Invalid passport expiry date'),
-  check('placeOfPassportIssuance').notEmpty().withMessage('Place of passport issuance is required'),
+  check('passportIssuingCountry').notEmpty().withMessage('Place of passport issuance is required'),
   check('gender').isIn(['male', 'female', 'other']).withMessage('Invalid gender'),
   check('email').isEmail().withMessage('Invalid email format'),
   check('phone').notEmpty().withMessage('Phone number is required'),
-  check('currentAddress').notEmpty().withMessage('Current address is required')
+  check('address').notEmpty().withMessage('Current address is required')
 ]; 

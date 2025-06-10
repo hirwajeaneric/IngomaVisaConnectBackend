@@ -89,6 +89,11 @@ export class VisaApplicationController {
         throw new BadRequestError('User not authenticated');
       }
 
+      console.log("User");
+      console.log(userId);
+      console.log("Application ID");
+      console.log(req.params.applicationId);
+
       const application = await visaApplicationService.submitApplication(userId, req.params.applicationId);
 
       res.json({

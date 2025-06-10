@@ -65,41 +65,41 @@ model AuditLog {
 }
 
 model VisaType {
-  id                   String                @id @default(uuid())
-  name                 String
-  slug                 String                @unique
-  description          String?
-  price                Float
-  processingTime       String
-  duration             String
-  requirements         String[]
-  eligibleCountries    String[]
-  coverImage           String?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  isActive             Boolean               @default(true)
-  applications         VisaApplication[]
+  id                String            @id @default(uuid())
+  name              String
+  slug              String            @unique
+  description       String?
+  price             Float
+  processingTime    String
+  duration          String
+  requirements      String[]
+  eligibleCountries String[]
+  coverImage        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  isActive          Boolean           @default(true)
+  applications      VisaApplication[]
 }
 
 model VisaApplication {
-  id                String            @id @default(uuid())
-  applicationNumber String            @unique
-  user              User              @relation(fields: [userId], references: [id])
+  id                String         @id @default(uuid())
+  applicationNumber String         @unique
+  user              User           @relation(fields: [userId], references: [id])
   userId            String
-  visaType          VisaType          @relation(fields: [visaTypeId], references: [id])
+  visaType          VisaType       @relation(fields: [visaTypeId], references: [id])
   visaTypeId        String
   status            Status
   submissionDate    DateTime?
   decisionDate      DateTime?
   expiryDate        DateTime?
   rejectionReason   String?
-  personalInfo      PersonalInfo?     @relation(fields: [personalInfoId], references: [id])
-  personalInfoId    String?           @unique
-  travelInfo        TravelInfo?       @relation(fields: [travelInfoId], references: [id])
-  travelInfoId      String?           @unique
+  personalInfo      PersonalInfo?  @relation(fields: [personalInfoId], references: [id])
+  personalInfoId    String?        @unique
+  travelInfo        TravelInfo?    @relation(fields: [travelInfoId], references: [id])
+  travelInfoId      String?        @unique
   documents         Document[]
-  payment           Payment?          @relation(fields: [paymentId], references: [id])
-  paymentId         String?           @unique
+  payment           Payment?       @relation(fields: [paymentId], references: [id])
+  paymentId         String?        @unique
   interviews        Interview[]
   notifications     Notification[]
   fundingSource     String?
@@ -111,81 +111,82 @@ model VisaApplication {
 }
 
 model PersonalInfo {
-  id                String           @id @default(uuid())
-  user              User             @relation(fields: [userId], references: [id])
-  userId            String           @unique
-  firstName         String
-  lastName          String
-  dateOfBirth       DateTime
-  nationality       String
-  passportNumber    String           @unique
-  passportIssueDate DateTime
-  passportExpiryDate DateTime
+  id                     String           @id @default(uuid())
+  user                   User             @relation(fields: [userId], references: [id])
+  userId                 String           @unique
+  firstName              String
+  lastName               String
+  dateOfBirth            DateTime
+  nationality            String
+  passportNumber         String           @unique
+  passportIssueDate      DateTime
+  passportExpiryDate     DateTime
   passportIssuingCountry String
-  gender            String
-  email             String
-  phone             String
-  maritalStatus     String?
-  address           String
-  currentAddress    String?
-  occupation        String?
-  employerDetails   String?
-  city              String
-  country           String
-  postalCode        String?
-  application       VisaApplication?
+  gender                 String
+  email                  String
+  phone                  String
+  maritalStatus          String?
+  address                String
+  currentAddress         String?
+  occupation             String?
+  employerDetails        String?
+  city                   String
+  country                String
+  postalCode             String?
+  application            VisaApplication?
 
   @@index([userId])
   @@index([passportNumber])
 }
 
 model TravelInfo {
-  id                String           @id @default(uuid())
-  application       VisaApplication?
-  purposeOfTravel   String
-  intendedEntryDate DateTime
-  intendedExitDate  DateTime
-  portOfEntry       String?
-  accommodationDetails String?
-  travelItinerary   String?
-  previousVisitDetails    String?
-  hostDetails       String?
-  finalDestination  String?
+  id                             String           @id @default(uuid())
+  application                    VisaApplication?
+  purposeOfTravel                String
+  intendedEntryDate              DateTime
+  intendedExitDate               DateTime
+  portOfEntry                    String?
+  accommodationDetails           String?
+  travelItinerary                String?
+  previousVisitDetails           String?
+  hostDetails                    String?
+  finalDestination               String?
   countriesVisitedOfAfterBurundi String?
+
   @@index([id])
 }
 
 model Document {
-  id                String           @id @default(uuid())
-  application       VisaApplication  @relation(fields: [applicationId], references: [id])
-  applicationId     String
-  documentType      String           // Changed to simple string field
-  fileName          String
-  filePath          String
-  fileSize          Int
-  uploadDate        DateTime         @default(now())
+  id                 String             @id @default(uuid())
+  application        VisaApplication    @relation(fields: [applicationId], references: [id])
+  applicationId      String
+  documentType       String // Changed to simple string field
+  fileName           String
+  filePath           String
+  fileSize           Int
+  uploadDate         DateTime           @default(now())
   verificationStatus VerificationStatus @default(PENDING)
-  verifiedBy        String?
-  verifiedAt        DateTime?
-  rejectionReason   String?
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  rejectionReason    String?
 
   @@index([applicationId])
   @@index([verificationStatus])
 }
 
 model Payment {
-  id                String           @id @default(uuid())
-  application       VisaApplication?
-  user              User             @relation(fields: [userId], references: [id])
-  userId            String
-  amount            Float
-  currency          String           @default("USD")
-  paymentStatus     PaymentStatus
-  stripePaymentId   String?          @unique
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  refundStatus      RefundStatus?
-  refundReason      String?
+  id              String           @id @default(uuid())
+  application     VisaApplication?
+  user            User             @relation(fields: [userId], references: [id])
+  userId          String
+  amount          Float
+  currency        String           @default("USD")
+  paymentStatus   PaymentStatus
+  stripePaymentId String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  refundStatus    RefundStatus?
+  refundReason    String?
 
   @@index([userId])
   @@index([paymentStatus])
@@ -193,18 +194,18 @@ model Payment {
 }
 
 model Interview {
-  id                String           @id @default(uuid())
-  application       VisaApplication  @relation(fields: [applicationId], references: [id])
-  applicationId     String
-  officer           User             @relation(fields: [officerId], references: [id])
-  officerId         String
-  scheduledDate     DateTime
-  location          String
-  status            InterviewStatus
-  notes             String?
-  outcome           String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  id            String          @id @default(uuid())
+  application   VisaApplication @relation(fields: [applicationId], references: [id])
+  applicationId String
+  officer       User            @relation(fields: [officerId], references: [id])
+  officerId     String
+  scheduledDate DateTime
+  location      String
+  status        InterviewStatus
+  notes         String?
+  outcome       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([applicationId])
   @@index([officerId])
@@ -212,15 +213,15 @@ model Interview {
 }
 
 model Notification {
-  id                String           @id @default(uuid())
-  user              User             @relation(fields: [userId], references: [id])
-  userId            String
-  application       VisaApplication? @relation(fields: [applicationId], references: [id])
-  applicationId     String?
-  type              NotificationType
-  message           String
-  isRead            Boolean          @default(false)
-  createdAt         DateTime         @default(now())
+  id            String           @id @default(uuid())
+  user          User             @relation(fields: [userId], references: [id])
+  userId        String
+  application   VisaApplication? @relation(fields: [applicationId], references: [id])
+  applicationId String?
+  type          NotificationType
+  message       String
+  isRead        Boolean          @default(false)
+  createdAt     DateTime         @default(now())
 
   @@index([userId])
   @@index([applicationId])
