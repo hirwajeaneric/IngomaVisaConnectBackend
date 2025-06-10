@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import { DocumentService } from '../services/document.service';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import { authenticate, authorize, UserPayload } from '../middleware/auth.middleware';
 import { BadRequestError } from '../utils/errors';
 
 const documentService = new DocumentService();
@@ -37,7 +37,7 @@ export class DocumentController {
     check('fileName').notEmpty().withMessage('File name is required'),
     check('filePath').notEmpty().withMessage('File path is required'),
     check('fileSize').isInt({ min: 1 }).withMessage('Invalid file size'),
-    async (req: Request & { user?: { id: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
@@ -67,7 +67,7 @@ export class DocumentController {
   static getApplicationDocuments = [
     authenticate,
     check('applicationId').isUUID().withMessage('Invalid application ID'),
-    async (req: Request & { user?: { id: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
@@ -97,7 +97,7 @@ export class DocumentController {
       .if(check('isApproved').equals('false'))
       .notEmpty()
       .withMessage('Rejection reason is required when rejecting a document'),
-    async (req: Request & { user?: { id: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);

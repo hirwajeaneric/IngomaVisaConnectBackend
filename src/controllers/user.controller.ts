@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import { UserService } from '../services/user.service';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import { authenticate, authorize, UserPayload } from '../middleware/auth.middleware';
 import { BadRequestError, ForbiddenError } from '../utils/errors';
 import { Role } from '../generated/prisma';
 
@@ -10,7 +10,7 @@ const userService = new UserService();
 export class UserController {
   static getProfile = [
     authenticate,
-    async (req: Request & { user?: { email: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const email = req.user?.email;
       if (!email) {
         throw new BadRequestError('User not authenticated');
@@ -74,7 +74,7 @@ export class UserController {
   static getAllUsers = [
     authenticate,
     authorize('USERS_VIEW_USERS'),
-    async (req: Request & { user?: { email: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const adminEmail = req.user?.email;
       if (!adminEmail) {
         throw new BadRequestError('User not authenticated');
@@ -97,7 +97,7 @@ export class UserController {
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
       }
-      const adminEmail = (req as Request & { user?: { email: string } }).user?.email;
+      const adminEmail = (req as Request & { user?: UserPayload }).user?.email;
       if (!adminEmail) {
         throw new BadRequestError('User not authenticated');
       }
@@ -119,7 +119,7 @@ export class UserController {
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
       }
-      const adminEmail = (req as Request & { user?: { email: string } }).user?.email;
+      const adminEmail = (req as Request & { user?: UserPayload }).user?.email;
       if (!adminEmail) {
         throw new BadRequestError('User not authenticated');
       }
@@ -151,7 +151,7 @@ export class UserController {
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
       }
-      const adminEmail = (req as Request & { user?: { email: string } }).user?.email;
+      const adminEmail = (req as Request & { user?: UserPayload }).user?.email;
       if (!adminEmail) {
         throw new BadRequestError('User not authenticated');
       }
@@ -174,7 +174,7 @@ export class UserController {
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
       }
-      const adminEmail = (req as Request & { user?: { email: string } }).user?.email;
+      const adminEmail = (req as Request & { user?: UserPayload }).user?.email;
       if (!adminEmail) {
         throw new BadRequestError('User not authenticated');
       }
@@ -199,8 +199,8 @@ export class UserController {
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
       }
-      const adminEmail = (req as Request & { user?: { email: string; role: Role } }).user?.email;
-      const adminRole = (req as Request & { user?: { email: string; role: Role } }).user?.role;
+      const adminEmail = (req as Request & { user?: UserPayload }).user?.email;
+      const adminRole = (req as Request & { user?: UserPayload }).user?.role;
 
       if (!adminEmail || !adminRole) {
         throw new BadRequestError('User not authenticated');

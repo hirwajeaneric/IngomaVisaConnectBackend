@@ -1,7 +1,7 @@
 import { Role } from '@/generated/prisma';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'oZsRp0Rj9ndGDK';
 const JWT_EXPIRATION = 86400000; // 1 day in milliseconds
 const JWT_REFRESH_EXPIRATION = 604800000; // 7 days in milliseconds
 

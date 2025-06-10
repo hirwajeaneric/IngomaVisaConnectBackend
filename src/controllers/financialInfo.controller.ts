@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, UserPayload } from '../middleware/auth.middleware';
 import { prisma } from '../lib/prisma';
 import { BadRequestError, NotFoundError } from '../middleware/error.middleware';
 
@@ -8,7 +8,7 @@ export class FinancialInfoController {
   static getFinancialInfo = [
     authenticate,
     check('applicationId').isUUID().withMessage('Invalid application ID'),
-    async (req: Request & { user?: { id: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -64,7 +64,7 @@ export class FinancialInfoController {
     check('applicationId').isUUID().withMessage('Invalid application ID'),
     check('fundingSource').notEmpty().withMessage('Funding source is required'),
     check('monthlyIncome').isNumeric().withMessage('Monthly income must be a number'),
-    async (req: Request & { user?: { id: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {

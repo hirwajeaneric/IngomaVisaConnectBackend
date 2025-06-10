@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import { TravelInfoService } from '../services/travelInfo.service';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, UserPayload } from '../middleware/auth.middleware';
 import { BadRequestError, NotFoundError } from '../utils/errors';
 import { VisaApplicationService } from '../services/visaApplication.service';
 import { TravelInfo } from '../generated/prisma';
@@ -19,7 +19,7 @@ export class TravelInfoController {
   static getTravelInfo = [
     authenticate,
     check('applicationId').isUUID().withMessage('Invalid application ID'),
-    async (req: Request & { user?: { id: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -78,7 +78,7 @@ export class TravelInfoController {
     check('portOfEntry').notEmpty().withMessage('Port of entry is required'),
     check('previousVisits').isBoolean().withMessage('Previous visits must be boolean'),
     check('accommodation').notEmpty().withMessage('Accommodation details are required'),
-    async (req: Request & { user?: { id: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -172,7 +172,7 @@ export class TravelInfoController {
     }
   ];
 
-  updateTravelInfo = async (req: Request & { user?: { id: string } }, res: Response) => {
+  updateTravelInfo = async (req: Request & { user?: UserPayload }, res: Response) => {
     try {
       const { applicationId } = req.params;
       const userId = req.user?.id;

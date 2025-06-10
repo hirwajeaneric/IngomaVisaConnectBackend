@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import { VisaService } from '../services/visa.service';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import { authenticate, authorize, UserPayload } from '../middleware/auth.middleware';
 import { BadRequestError } from '../utils/errors';
 
 const visaService = new VisaService();
@@ -16,7 +16,7 @@ export class VisaController {
     check('requirements').isArray().withMessage('Requirements must be an array'),
     check('eligibleCountries').isArray().withMessage('Eligible countries must be an array'),
     check('coverImage').notEmpty().withMessage('Cover image is required'),
-    async (req: Request & { user?: { email: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
@@ -100,7 +100,7 @@ export class VisaController {
     check('requirements').optional().isArray().withMessage('Requirements must be an array'),
     check('eligibleCountries').optional().isArray().withMessage('Eligible countries must be an array'),
     check('coverImage').optional().notEmpty().withMessage('Cover image is required'),
-    async (req: Request & { user?: { email: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
@@ -123,7 +123,7 @@ export class VisaController {
   static deleteVisaType = [
     authenticate,
     check('id').isUUID().withMessage('Invalid visa type ID'),
-    async (req: Request & { user?: { email: string } }, res: Response) => {
+    async (req: Request & { user?: UserPayload }, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         throw new BadRequestError(errors.array()[0].msg);
