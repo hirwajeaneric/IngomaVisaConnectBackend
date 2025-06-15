@@ -69,23 +69,25 @@ export class PersonalInfoService {
       throw new BadRequestError('Passport number is already registered to another user');
     }
 
-    let personalInfo;
-    if (application.personalInfo) {
-      // Update existing personal info
-      personalInfo = await prisma.personalInfo.update({
-        where: { id: application.personalInfo.id },
-        data: formattedData
-      });
-    } else {
-      // Create new personal info
-      personalInfo = await prisma.personalInfo.create({
-        data: {
-          ...formattedData,
-          user: { connect: { id: userId } },
-          application: { connect: { id: applicationId } }
+    // Use upsert to handle both create and update cases
+    const personalInfo = await prisma.personalInfo.upsert({
+      where: {
+        userId: userId
+      },
+      update: {
+        ...formattedData,
+        application: {
+          connect: { id: applicationId }
         }
-      });
-    }
+      },
+      create: {
+        ...formattedData,
+        userId,
+        application: {
+          connect: { id: applicationId }
+        }
+      }
+    });
 
     await this.logAuditEvent(
       userId,
@@ -146,7 +148,7 @@ export class PersonalInfoService {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     await prisma.auditLog.create({
       data: {
-        user: { connect: { id: userId } },
+        email: user?.email || 'unknown',
         userRole: user?.role || 'UNKNOWN',
         action,
         entityType: 'PERSONAL_INFO',

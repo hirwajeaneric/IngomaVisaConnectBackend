@@ -22,155 +22,170 @@ export class TravelInfoController {
     this.visaApplicationService = new VisaApplicationService();
   }
 
-  static getTravelInfo = async (req: RequestWithUser, res: Response): Promise<void> => {
-    try {
-      const { applicationId } = req.params;
-      const userId = req.user?.id;
-
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'User not authenticated'
-        });
-        return;
-      }
-
-      const travelInfo = await prisma.travelInfo.findFirst({
-        where: {
-          application: {
-            id: applicationId,
-            userId
-          }
+  static getTravelInfo = [
+    authenticate,
+    check('applicationId').isUUID().withMessage('Invalid application ID'),
+    async (req: Request & { user?: { id: string } }, res: Response) => {
+      try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          throw new BadRequestError(errors.array()[0].msg);
         }
-      });
 
-      if (!travelInfo) {
-        res.status(404).json({
-          success: false,
-          message: 'Travel information not found'
+        const { applicationId } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId) {
+          throw new BadRequestError('User ID is required');
+        }
+
+        // Get application and verify ownership
+        const application = await prisma.visaApplication.findUnique({
+          where: { id: applicationId },
+          include: { travelInfo: true }
         });
-        return;
-      }
 
-      res.json({
-        success: true,
-        data: travelInfo
-      });
-    } catch (error) {
-      console.error('Error in getTravelInfo:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error'
-      });
+        if (!application) {
+          throw new NotFoundError('Application not found');
+        }
+
+        if (application.userId !== userId) {
+          throw new BadRequestError('Access denied');
+        }
+
+        res.json({
+          success: true,
+          message: 'Travel information retrieved successfully',
+          data: application.travelInfo
+        });
+      } catch (error) {
+        if (error instanceof Error) {
+          res.status(error instanceof BadRequestError || error instanceof NotFoundError ? 400 : 500).json({
+            success: false,
+            message: error.message
+          });
+        } else {
+          res.status(500).json({
+            success: false,
+            message: 'An unexpected error occurred'
+          });
+        }
+      }
     }
-  };
+  ];
 
-  static createOrUpdateTravelInfo = async (req: RequestWithUser, res: Response): Promise<void> => {
-    try {
-      const { applicationId } = req.params;
-      const userId = req.user?.id;
-      const data = req.body;
+  static createOrUpdateTravelInfo = [
+    authenticate,
+    check('applicationId').isUUID().withMessage('Invalid application ID'),
+    check('purposeOfTravel').notEmpty().withMessage('Purpose of travel is required'),
+    check('entryDate').isISO8601().withMessage('Invalid entry date'),
+    check('exitDate').isISO8601().withMessage('Invalid exit date'),
+    check('portOfEntry').notEmpty().withMessage('Port of entry is required'),
+    check('previousVisits').isBoolean().withMessage('Previous visits must be a boolean'),
+    async (req: Request & { user?: { id: string } }, res: Response) => {
+      try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          throw new BadRequestError(errors.array()[0].msg);
+        }
 
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'User not authenticated'
+        const { applicationId } = req.params;
+        const userId = req.user?.id;
+        const data = req.body;
+
+        if (!userId) {
+          throw new BadRequestError('User ID is required');
+        }
+
+        // Get user email for audit log
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true }
         });
-        return;
-      }
 
-      // Get user email for audit log
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true }
-      });
+        if (!user) {
+          throw new BadRequestError('User not found');
+        }
 
-      if (!user) {
-        res.status(401).json({
-          success: false,
-          message: 'User not found'
+        // Verify application exists and belongs to user
+        const application = await prisma.visaApplication.findUnique({
+          where: { id: applicationId }
         });
-        return;
-      }
 
-      // Verify application exists and belongs to user
-      const application = await prisma.visaApplication.findUnique({
-        where: { id: applicationId }
-      });
+        if (!application) {
+          throw new NotFoundError('Application not found');
+        }
 
-      if (!application) {
-        throw new NotFoundError('Application not found');
-      }
+        if (application.userId !== userId) {
+          throw new BadRequestError('Access denied');
+        }
 
-      if (application.userId !== userId) {
-        throw new BadRequestError('Access denied');
-      }
+        // Format dates to ISO strings
+        const formattedData = {
+          purposeOfTravel: data.purposeOfTravel,
+          entryDate: new Date(data.entryDate).toISOString(),
+          exitDate: new Date(data.exitDate).toISOString(),
+          previousVisits: data.previousVisits || false,
+          intendedEntryDate: new Date(data.entryDate).toISOString(),
+          intendedExitDate: new Date(data.exitDate).toISOString(),
+          portOfEntry: data.portOfEntry,
+          accommodationDetails: data.accommodationDetails,
+          travelItinerary: data.travelItinerary,
+          previousVisitDetails: data.previousVisitDetails,
+          hostDetails: data.hostDetails,
+          finalDestination: data.finalDestination,
+          countriesVisitedOfAfterBurundi: data.countriesVisitedOfAfterBurundi
+        };
 
-      // Format dates to ISO strings
-      const formattedData = {
-        purposeOfTravel: data.purposeOfTravel,
-        entryDate: new Date(data.entryDate).toISOString(),
-        exitDate: new Date(data.exitDate).toISOString(),
-        previousVisits: data.previousVisits || false,
-        intendedEntryDate: new Date(data.entryDate).toISOString(),
-        intendedExitDate: new Date(data.exitDate).toISOString(),
-        portOfEntry: data.portOfEntry,
-        accommodationDetails: data.accommodationDetails,
-        travelItinerary: data.travelItinerary,
-        previousVisitDetails: data.previousVisitDetails,
-        hostDetails: data.hostDetails,
-        finalDestination: data.finalDestination,
-        countriesVisitedOfAfterBurundi: data.countriesVisitedOfAfterBurundi
-      };
-
-      // Update or create travel info
-      const updatedTravelInfo = await prisma.travelInfo.upsert({
-        where: {
-          id: application.travelInfoId || 'new'
-        },
-        create: {
-          ...formattedData,
-          application: {
-            connect: {
-              id: applicationId
+        // Update or create travel info
+        const updatedTravelInfo = await prisma.travelInfo.upsert({
+          where: {
+            id: application.travelInfoId || 'new'
+          },
+          create: {
+            ...formattedData,
+            application: {
+              connect: {
+                id: applicationId
+              }
             }
-          }
-        },
-        update: formattedData
-      });
-
-      // Log the update
-      await prisma.auditLog.create({
-        data: {
-          email: user.email,
-          userRole: 'USER',
-          action: 'TRAVEL_INFO_UPDATED',
-          entityType: 'VISA_APPLICATION',
-          details: { detail: `Updated travel information for application ${applicationId}` }
-        }
-      });
-
-      res.json({
-        success: true,
-        message: 'Travel information updated successfully',
-        data: updatedTravelInfo
-      });
-    } catch (error) {
-      if (error instanceof BadRequestError || error instanceof NotFoundError) {
-        res.status(400).json({
-          success: false,
-          message: error.message
+          },
+          update: formattedData
         });
-        return;
+
+        // Log the update
+        await prisma.auditLog.create({
+          data: {
+            email: user.email,
+            userRole: 'USER',
+            action: 'TRAVEL_INFO_UPDATED',
+            entityType: 'VISA_APPLICATION',
+            details: { detail: `Updated travel information for application ${applicationId}` }
+          }
+        });
+
+        res.json({
+          success: true,
+          message: 'Travel information updated successfully',
+          data: updatedTravelInfo
+        });
+      } catch (error) {
+        if (error instanceof BadRequestError || error instanceof NotFoundError) {
+          res.status(400).json({
+            success: false,
+            message: error.message
+          });
+          return;
+        }
+        
+        console.error('Error in createOrUpdateTravelInfo:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error'
+        });
       }
-      
-      console.error('Error in createOrUpdateTravelInfo:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error'
-      });
     }
-  };
+  ];
 
   updateTravelInfo = async (req: Request & { user?: UserPayload }, res: Response) => {
     try {

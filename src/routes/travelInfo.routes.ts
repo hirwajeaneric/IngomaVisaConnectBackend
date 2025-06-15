@@ -1,21 +1,20 @@
 import { Router } from 'express';
 import { TravelInfoController } from '../controllers/travelInfo.controller';
+import { RequestHandler } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
+import { validateRequest } from '../middleware/validation';
+import { travelInfoSchema } from '../lib/validation/travelInfo.schema';
 
 const router = Router();
 
-// Create or update travel information
-router.post(
-  '/:applicationId',
-  authenticate,
-  TravelInfoController.createOrUpdateTravelInfo
-);
+// Get travel info for an application
+router.get('/:applicationId', authenticate, ...(TravelInfoController.getTravelInfo as RequestHandler[]));
 
-// Get travel information
-router.get(
-  '/:applicationId',
+// Update travel info for an application
+router.post('/:applicationId', 
   authenticate,
-  TravelInfoController.getTravelInfo
+  validateRequest(travelInfoSchema),
+  ...(TravelInfoController.createOrUpdateTravelInfo as RequestHandler[])
 );
 
 export default router;
