@@ -39,22 +39,30 @@ export class PersonalInfoService {
       throw new ForbiddenError('Access denied');
     }
 
+    // Format dates to ISO strings
+    const formattedData = {
+      ...data,
+      dateOfBirth: new Date(data.dateOfBirth).toISOString(),
+      passportIssueDate: new Date(data.passportIssueDate).toISOString(),
+      passportExpiryDate: new Date(data.passportExpiryDate).toISOString(),
+    };
+
     // Validate passport expiry date
     const today = new Date();
-    if (data.passportExpiryDate < today) {
+    if (new Date(formattedData.passportExpiryDate) < today) {
       throw new BadRequestError('Passport has expired');
     }
 
     // Calculate minimum validity period (usually 6 months)
     const sixMonthsFromNow = new Date();
     sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-    if (data.passportExpiryDate < sixMonthsFromNow) {
+    if (new Date(formattedData.passportExpiryDate) < sixMonthsFromNow) {
       throw new BadRequestError('Passport must be valid for at least 6 months');
     }
 
     // Check if passport number is already in use by another user
     const existingPassport = await prisma.personalInfo.findUnique({
-      where: { passportNumber: data.passportNumber }
+      where: { passportNumber: formattedData.passportNumber }
     });
 
     if (existingPassport && existingPassport.userId !== userId) {
@@ -66,21 +74,13 @@ export class PersonalInfoService {
       // Update existing personal info
       personalInfo = await prisma.personalInfo.update({
         where: { id: application.personalInfo.id },
-        data: {
-          ...data,
-          dateOfBirth: new Date(data.dateOfBirth),
-          passportIssueDate: new Date(data.passportIssueDate),
-          passportExpiryDate: new Date(data.passportExpiryDate),
-        }
+        data: formattedData
       });
     } else {
       // Create new personal info
       personalInfo = await prisma.personalInfo.create({
         data: {
-          ...data,
-          dateOfBirth: new Date(data.dateOfBirth),
-          passportIssueDate: new Date(data.passportIssueDate),
-          passportExpiryDate: new Date(data.passportExpiryDate),
+          ...formattedData,
           user: { connect: { id: userId } },
           application: { connect: { id: applicationId } }
         }

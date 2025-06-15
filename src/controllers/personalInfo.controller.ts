@@ -3,6 +3,9 @@ import { check, validationResult } from 'express-validator';
 import { authenticate } from '../middleware/auth.middleware';
 import { BadRequestError, NotFoundError } from '../middleware/error.middleware';
 import { prisma } from '../lib/prisma';
+import { PersonalInfoService } from '../services/personalInfo.service';
+
+const personalInfoService = new PersonalInfoService();
 
 export class PersonalInfoController {
   static getPersonalInfo = [
@@ -81,72 +84,39 @@ export class PersonalInfoController {
 
         const { applicationId } = req.params;
         const userId = req.user?.id;
-        const personalInfo = req.body;
+        const data = req.body;
 
         if (!userId) {
           throw new BadRequestError('User ID is required');
         }
 
-        // Verify application exists and belongs to user
-        const application = await prisma.visaApplication.findUnique({
-          where: { id: applicationId }
-        });
+        // Format dates to ISO strings
+        const formattedData = {
+          ...data,
+          dateOfBirth: new Date(data.dateOfBirth).toISOString(),
+          passportIssueDate: new Date(data.passportIssueDate).toISOString(),
+          passportExpiryDate: new Date(data.passportExpiryDate).toISOString(),
+        };
 
-        if (!application) {
-          throw new NotFoundError('Application not found');
-        }
-
-        if (application.userId !== userId) {
-          throw new BadRequestError('Access denied');
-        }
-
-        // Update personal information
-        const updatedApplication = await prisma.visaApplication.update({
-          where: { id: applicationId },
-          data: {
-            personalInfo: {
-              upsert: {
-                create: {
-                  ...personalInfo,
-                  userId
-                },
-                update: personalInfo
-              }
-            }
-          },
-          include: {
-            personalInfo: true
-          }
-        });
-
-        // Log the update
-        await prisma.auditLog.create({
-          data: {
-            email: userId,
-            userRole: 'USER',
-            action: 'PERSONAL_INFO_UPDATED',
-            entityType: 'VISA_APPLICATION',
-            details: { detail: `Updated personal information for application ${applicationId}` }
-          }
-        });
-
+        const result = await personalInfoService.createOrUpdatePersonalInfo(userId, applicationId, formattedData);
+        
         res.json({
           success: true,
-          message: 'Personal information updated successfully',
-          data: updatedApplication.personalInfo
+          data: result
         });
       } catch (error) {
-        if (error instanceof Error) {
-          res.status(error instanceof BadRequestError || error instanceof NotFoundError ? 400 : 500).json({
+        if (error instanceof BadRequestError) {
+          return res.status(400).json({
             success: false,
             message: error.message
           });
-        } else {
-          res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred'
-          });
         }
+        
+        console.error('Error in createOrUpdatePersonalInfo:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error'
+        });
       }
     }
   ];

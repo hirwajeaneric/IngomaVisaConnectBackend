@@ -62,9 +62,19 @@ export class TravelInfoService {
       // Create new travel info
       travelInfo = await prisma.travelInfo.create({
         data: {
-          ...data,
+          entryDate: new Date(data.intendedEntryDate),
+          exitDate: new Date(data.intendedExitDate),
           intendedEntryDate: new Date(data.intendedEntryDate),
           intendedExitDate: new Date(data.intendedExitDate),
+          previousVisits: false,
+          purposeOfTravel: data.purposeOfTravel,
+          portOfEntry: data.portOfEntry,
+          accommodationDetails: data.accommodationDetails,
+          travelItinerary: data.travelItinerary,
+          previousVisitDetails: data.previousVisitDetails,
+          hostDetails: data.hostDetails,
+          finalDestination: data.finalDestination,
+          countriesVisitedOfAfterBurundi: data.countriesVisitedOfAfterBurundi,
           application: { connect: { id: applicationId } }
         }
       });

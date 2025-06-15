@@ -143,6 +143,9 @@ model TravelInfo {
   id                             String           @id @default(uuid())
   application                    VisaApplication?
   purposeOfTravel                String
+  entryDate                      DateTime
+  exitDate                       DateTime
+  previousVisits                 Boolean
   intendedEntryDate              DateTime
   intendedExitDate               DateTime
   portOfEntry                    String?
