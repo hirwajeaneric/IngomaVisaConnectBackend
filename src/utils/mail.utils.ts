@@ -41,4 +41,26 @@ export class MailUtil {
             html: `Click the link to reset your password: <a href="http://localhost:3000/api/auth/password-reset/confirm?token=${token}">Reset Password</a><br>Valid for 1 hour.`,
         });
     }
+
+    static async sendApplicationCreatedEmail(email: string, applicationNumber: string, visaType: string, amount: number): Promise<void> {
+        await this.sendMail({
+            to: email,
+            subject: 'IngomaVisaConnect - Visa Application Created',
+            html: `
+                <h2>Your Visa Application Has Been Created Successfully!</h2>
+                <p>Dear Applicant,</p>
+                <p>Your visa application has been created successfully with the following details:</p>
+                <ul>
+                    <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                    <li><strong>Visa Type:</strong> ${visaType}</li>
+                    <li><strong>Amount Due:</strong> $${amount}</li>
+                </ul>
+                <p>To proceed with your application, please complete the payment process by clicking the link below:</p>
+                <p><a href="${process.env.FRONTEND_URL}/applications/${applicationNumber}/payment">Proceed to Payment</a></p>
+                <p>Please note that your application will not be processed until the payment is completed.</p>
+                <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
 }
