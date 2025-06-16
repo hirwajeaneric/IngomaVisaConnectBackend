@@ -7,5 +7,5 @@ export const travelInfoSchema = [
   check('exitDate').isISO8601().withMessage('Invalid exit date'),
   check('portOfEntry').notEmpty().withMessage('Port of entry is required'),
   check('previousVisits').isBoolean().withMessage('Previous visits must be boolean'),
-  check('accommodation').notEmpty().withMessage('Accommodation details are required')
+  check('accommodationDetails').notEmpty().withMessage('Accommodation details are required')
 ]; 

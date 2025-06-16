@@ -62,19 +62,19 @@ export class PersonalInfoController {
 
   static createOrUpdatePersonalInfo = [
     authenticate,
-    check('applicationId').isUUID().withMessage('Invalid application ID'),
-    check('firstName').notEmpty().withMessage('First name is required'),
-    check('lastName').notEmpty().withMessage('Last name is required'),
-    check('dateOfBirth').isISO8601().withMessage('Invalid date of birth'),
-    check('nationality').notEmpty().withMessage('Nationality is required'),
-    check('passportNumber').notEmpty().withMessage('Passport number is required'),
-    check('passportIssueDate').isISO8601().withMessage('Invalid passport issue date'),
-    check('passportExpiryDate').isISO8601().withMessage('Invalid passport expiry date'),
-    check('passportIssuingCountry').notEmpty().withMessage('Place of passport issuance is required'),
-    check('gender').isIn(['male', 'female', 'other']).withMessage('Invalid gender'),
-    check('email').isEmail().withMessage('Invalid email format'),
-    check('phone').notEmpty().withMessage('Phone number is required'),
-    check('address').notEmpty().withMessage('Current address is required'),
+    // check('applicationId').isUUID().withMessage('Invalid application ID'),
+    // check('firstName').notEmpty().withMessage('First name is required'),
+    // check('lastName').notEmpty().withMessage('Last name is required'),
+    // check('dateOfBirth').isISO8601().withMessage('Invalid date of birth'),
+    // check('nationality').notEmpty().withMessage('Nationality is required'),
+    // check('passportNumber').notEmpty().withMessage('Passport number is required'),
+    // check('passportIssueDate').isISO8601().withMessage('Invalid passport issue date'),
+    // check('passportExpiryDate').isISO8601().withMessage('Invalid passport expiry date'),
+    // check('passportIssuingCountry').notEmpty().withMessage('Place of passport issuance is required'),
+    // check('gender').isIn(['male', 'female', 'other']).withMessage('Invalid gender'),
+    // check('email').isEmail().withMessage('Invalid email format'),
+    // check('phone').notEmpty().withMessage('Phone number is required'),
+    // check('address').notEmpty().withMessage('Current address is required'),
     async (req: Request & { user?: { id: string } }, res: Response) => {
       try {
         const errors = validationResult(req);

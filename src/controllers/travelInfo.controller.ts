@@ -76,12 +76,6 @@ export class TravelInfoController {
 
   static createOrUpdateTravelInfo = [
     authenticate,
-    check('applicationId').isUUID().withMessage('Invalid application ID'),
-    check('purposeOfTravel').notEmpty().withMessage('Purpose of travel is required'),
-    check('entryDate').isISO8601().withMessage('Invalid entry date'),
-    check('exitDate').isISO8601().withMessage('Invalid exit date'),
-    check('portOfEntry').notEmpty().withMessage('Port of entry is required'),
-    check('previousVisits').isBoolean().withMessage('Previous visits must be a boolean'),
     async (req: Request & { user?: { id: string } }, res: Response) => {
       try {
         const errors = validationResult(req);
