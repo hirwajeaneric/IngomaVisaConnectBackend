@@ -21,6 +21,7 @@
     "@types/helmet": "^0.0.48",
     "@types/morgan": "^1.9.10",
     "@types/node": "^22.15.21",
+    "@types/stripe": "^8.0.416",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -32,7 +33,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "nodemailer": "^7.0.3",
-    "stripe": "^18.1.1",
+    "stripe": "^18.2.1",
     "typescript": "^5.8.3"
   },
   "devDependencies": {
