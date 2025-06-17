@@ -45,36 +45,13 @@ export class PersonalInfoController {
           data: application.personalInfo
         });
       } catch (error) {
-        if (error instanceof Error) {
-          res.status(error instanceof BadRequestError || error instanceof NotFoundError ? 400 : 500).json({
-            success: false,
-            message: error.message
-          });
-        } else {
-          res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred'
-          });
-        }
+        throw error;
       }
     }
   ];
 
   static createOrUpdatePersonalInfo = [
     authenticate,
-    // check('applicationId').isUUID().withMessage('Invalid application ID'),
-    // check('firstName').notEmpty().withMessage('First name is required'),
-    // check('lastName').notEmpty().withMessage('Last name is required'),
-    // check('dateOfBirth').isISO8601().withMessage('Invalid date of birth'),
-    // check('nationality').notEmpty().withMessage('Nationality is required'),
-    // check('passportNumber').notEmpty().withMessage('Passport number is required'),
-    // check('passportIssueDate').isISO8601().withMessage('Invalid passport issue date'),
-    // check('passportExpiryDate').isISO8601().withMessage('Invalid passport expiry date'),
-    // check('passportIssuingCountry').notEmpty().withMessage('Place of passport issuance is required'),
-    // check('gender').isIn(['male', 'female', 'other']).withMessage('Invalid gender'),
-    // check('email').isEmail().withMessage('Invalid email format'),
-    // check('phone').notEmpty().withMessage('Phone number is required'),
-    // check('address').notEmpty().withMessage('Current address is required'),
     async (req: Request & { user?: { id: string } }, res: Response) => {
       try {
         const errors = validationResult(req);
@@ -105,18 +82,7 @@ export class PersonalInfoController {
           data: result
         });
       } catch (error) {
-        if (error instanceof BadRequestError) {
-          return res.status(400).json({
-            success: false,
-            message: error.message
-          });
-        }
-        
-        console.error('Error in createOrUpdatePersonalInfo:', error);
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error'
-        });
+        throw error;
       }
     }
   ];

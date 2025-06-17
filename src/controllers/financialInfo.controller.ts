@@ -44,17 +44,7 @@ export class FinancialInfoController {
           }
         });
       } catch (error) {
-        if (error instanceof Error) {
-          res.status(error instanceof BadRequestError || error instanceof NotFoundError ? 400 : 500).json({
-            success: false,
-            message: error.message
-          });
-        } else {
-          res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred'
-          });
-        }
+        throw error;
       }
     }
   ];
@@ -131,19 +121,7 @@ export class FinancialInfoController {
           }
         });
       } catch (error) {
-        if (error instanceof BadRequestError || error instanceof NotFoundError) {
-          res.status(400).json({
-            success: false,
-            message: error.message
-          });
-          return;
-        }
-        
-        console.error('Error in createOrUpdateFinancialInfo:', error);
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error'
-        });
+        throw error;
       }
     }
   ];

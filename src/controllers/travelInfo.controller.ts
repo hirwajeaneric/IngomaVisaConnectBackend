@@ -59,17 +59,7 @@ export class TravelInfoController {
           data: application.travelInfo
         });
       } catch (error) {
-        if (error instanceof Error) {
-          res.status(error instanceof BadRequestError || error instanceof NotFoundError ? 400 : 500).json({
-            success: false,
-            message: error.message
-          });
-        } else {
-          res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred'
-          });
-        }
+        throw error;
       }
     }
   ];
@@ -164,19 +154,7 @@ export class TravelInfoController {
           data: updatedTravelInfo
         });
       } catch (error) {
-        if (error instanceof BadRequestError || error instanceof NotFoundError) {
-          res.status(400).json({
-            success: false,
-            message: error.message
-          });
-          return;
-        }
-        
-        console.error('Error in createOrUpdateTravelInfo:', error);
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error'
-        });
+        throw error;
       }
     }
   ];
@@ -240,17 +218,7 @@ export class TravelInfoController {
         data: updatedTravelInfo
       });
     } catch (error) {
-      if (error instanceof Error) {
-        res.status(error instanceof BadRequestError || error instanceof NotFoundError ? 400 : 500).json({
-          success: false,
-          message: error.message
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'An unexpected error occurred'
-        });
-      }
+      throw error;
     }
   };
 }
