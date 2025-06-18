@@ -23,7 +23,6 @@ export class AuthService {
         try {
             const user = await prisma.user.findUnique({ where: { email } });
             if (!user) {
-                await this.logAuditEvent(email, 'LOGIN_FAILED', 'User not found');
                 throw new NotFoundError('User not found');
             }
             if (!user.isActive) {
