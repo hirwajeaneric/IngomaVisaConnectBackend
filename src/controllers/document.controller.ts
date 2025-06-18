@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import { DocumentService } from '../services/document.service';
 import { authenticate, authorize, UserPayload } from '../middleware/auth.middleware';
-import { BadRequestError } from '../utils/errors';
+import { BadRequestError } from '../middleware/error.middleware';
 
 const documentService = new DocumentService();
 

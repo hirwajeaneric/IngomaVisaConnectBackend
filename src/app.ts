@@ -12,6 +12,7 @@ import travelInfoRoutes from "./routes/travelInfo.routes";
 import documentRoutes from "./routes/document.routes";
 import financialInfoRoutes from "./routes/financialInfo.routes";
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+import paymentRoutes from './routes/payment.routes';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/personal-info', personalInfoRoutes);
 app.use('/api/travel-info', travelInfoRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/financial-info', financialInfoRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Error handling
 app.use(notFoundHandler);
