@@ -1,10 +1,10 @@
 {
   "name": "ingomavisaconnectbackendv2",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node dist/server.js",
-    "dev": "prisma generate && nodemon -r tsconfig-paths/register src/server.ts",
+    "start": "node dist/index.js",
+    "dev": "prisma generate && nodemon -r tsconfig-paths/register src/index.ts",
     "test": "jest",
     "build": "tsc",
     "postbuild": "cp -r src/generated dist/generated && tsc-alias",
