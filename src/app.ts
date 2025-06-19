@@ -20,7 +20,7 @@ const app: Application = express();
 
 // CORS Configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: process.env.CORS_ORIGIN || '*',
   methods: process.env.CORS_METHODS?.split(',') || ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   credentials: process.env.CORS_CREDENTIALS === 'true',
   maxAge: parseInt(process.env.CORS_MAX_AGE || '86400'),
