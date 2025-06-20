@@ -11,6 +11,7 @@ import personalInfoRoutes from "./routes/personalInfo.routes";
 import travelInfoRoutes from "./routes/travelInfo.routes";
 import documentRoutes from "./routes/document.routes";
 import financialInfoRoutes from "./routes/financialInfo.routes";
+import messageRoutes from "./routes/message.routes";
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import paymentRoutes from './routes/payment.routes';
 
@@ -43,6 +44,7 @@ app.use('/api/travel-info', travelInfoRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/financial-info', financialInfoRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Error handling
 app.use(notFoundHandler);
