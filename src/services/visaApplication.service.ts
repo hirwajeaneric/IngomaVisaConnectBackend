@@ -89,7 +89,7 @@ export class VisaApplicationService {
         personalInfo: true,
         travelInfo: true,
         documents: true,
-        payment: true,
+        payment: true
       }
     });
 
