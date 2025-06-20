@@ -75,6 +75,20 @@ export class VisaApplicationController {
     }
   ];
 
+  static getAllApplications = [
+    authenticate,
+    authorize('APPLICATIONS_VIEW_APPLICATIONS'),
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      const applications = await visaApplicationService.getAllApplications();
+
+      res.json({
+        success: true,
+        message: 'Applications retrieved successfully',
+        data: applications
+      });
+    }
+  ];
+
   static submitApplication = [
     authenticate,
     check('applicationId').isUUID().withMessage('Invalid application ID'),

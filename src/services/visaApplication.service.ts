@@ -246,6 +246,16 @@ export class VisaApplicationService {
     return this.mapToApplicationDto(updatedApplication);
   }
 
+  async getAllApplications(): Promise<any[]> {
+    const applications = await prisma.visaApplication.findMany({
+      include: {
+        visaType: true,
+        user: true,
+      }
+    });
+    return applications;
+  }
+
   private mapToApplicationDto(application: any): any {
     return {
       id: application.id,

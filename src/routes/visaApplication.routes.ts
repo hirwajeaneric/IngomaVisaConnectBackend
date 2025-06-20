@@ -10,6 +10,9 @@ router.post('/', ...(VisaApplicationController.createApplication as RequestHandl
 // Get user's applications
 router.get('/', ...(VisaApplicationController.getUserApplications as RequestHandler[]));
 
+// Get all applications
+router.get('/all', ...(VisaApplicationController.getAllApplications as RequestHandler[]));
+
 // Get specific application
 router.get('/:applicationId', ...(VisaApplicationController.getApplicationById as RequestHandler[]));
 
