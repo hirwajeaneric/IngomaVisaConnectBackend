@@ -137,19 +137,7 @@ export class DocumentService {
         verifiedAt: new Date(),
         rejectionReason: isApproved ? null : rejectionReason,
       }
-    });
-
-    // Create notification for document verification
-    await prisma.notification.create({
-      data: {
-        userId: document.application.userId,
-        applicationId: document.application.id,
-        type: 'DOCUMENT_REQUIRED',
-        message: isApproved
-          ? `Your ${document.documentType} has been verified successfully.`
-          : `Your ${document.documentType} was rejected. Reason: ${rejectionReason}`,
-      }
-    });
+    });    
 
     await this.logAuditEvent(
       officerId,

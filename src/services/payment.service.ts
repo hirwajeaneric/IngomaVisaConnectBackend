@@ -105,14 +105,8 @@ export class PaymentService {
     });
 
     if (payment) {
-      await prisma.notification.create({
-        data: {
-          userId: payment.userId,
-          type: 'PAYMENT_COMPLETED',
-          message: `Your payment of $${payment.amount} has been processed successfully.`,
-          applicationId: applicationId
-        }
-      });
+      // Send email notification
+      // TODO: Implement email notification
     }
   }
 
@@ -189,15 +183,8 @@ export class PaymentService {
         }
       });
 
-      // Create notification
-      await prisma.notification.create({
-        data: {
-          userId: payment.userId,
-          type: 'PAYMENT_COMPLETED',
-          message: `Your payment of $${payment.amount} has been processed successfully.`,
-          applicationId: payment.application.id
-        }
-      });
+      // Send email notification
+      // TODO: Implement email notification
     }
 
     return updatedPayment;

@@ -169,16 +169,6 @@ export class VisaApplicationService {
       }
     });
 
-    // Create notification for submission
-    await prisma.notification.create({
-      data: {
-        userId,
-        applicationId,
-        type: 'APPLICATION_SUBMITTED',
-        message: `Your visa application ${application.applicationNumber} has been submitted successfully.`,
-      }
-    });
-
     await this.logAuditEvent(userId, 'APPLICATION_SUBMITTED', `Submitted application: ${application.applicationNumber}`);
     return this.mapToApplicationDto(updatedApplication);
   }
@@ -224,16 +214,6 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
-      }
-    });
-
-    // Create notification for status update
-    await prisma.notification.create({
-      data: {
-        userId: application.userId,
-        applicationId,
-        type: 'APPLICATION_STATUS_UPDATED',
-        message: `Your visa application ${application.applicationNumber} has been ${status.toLowerCase()}.`,
       }
     });
 

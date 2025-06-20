@@ -32,7 +32,8 @@ model User {
   personalInfo         PersonalInfo?
   payments             Payment[]
   interviews           Interview[]
-  notifications        Notification[]
+  sentMessages         Message[]         @relation("sender")
+  receivedMessages     Message[]         @relation("recipient")
 
   @@index([email])
 }
@@ -44,7 +45,7 @@ model OTP {
   createdAt DateTime @default(now())
   expiresAt DateTime
   used      Boolean  @default(false)
-  user      User     @relation(fields: [email], references: [email])
+  user      User     @relation(fields: [email], references: [email], onDelete: Cascade)
 
   @@index([email])
 }
@@ -57,7 +58,7 @@ model AuditLog {
   entityType String
   details    Json
   createdAt  DateTime @default(now())
-  user       User     @relation(fields: [email], references: [email])
+  user       User     @relation(fields: [email], references: [email], onDelete: Cascade)
 
   @@index([email])
   @@index([action])
@@ -84,35 +85,35 @@ model VisaType {
 model VisaApplication {
   id                String         @id @default(uuid())
   applicationNumber String         @unique
-  user              User           @relation(fields: [userId], references: [id])
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId            String
-  visaType          VisaType       @relation(fields: [visaTypeId], references: [id])
+  visaType          VisaType       @relation(fields: [visaTypeId], references: [id], onDelete: Cascade)
   visaTypeId        String
   status            Status
   submissionDate    DateTime?
   decisionDate      DateTime?
   expiryDate        DateTime?
   rejectionReason   String?
-  personalInfo      PersonalInfo?  @relation(fields: [personalInfoId], references: [id])
+  personalInfo      PersonalInfo?  @relation(fields: [personalInfoId], references: [id], onDelete: Cascade)
   personalInfoId    String?        @unique
-  travelInfo        TravelInfo?    @relation(fields: [travelInfoId], references: [id])
+  travelInfo        TravelInfo?    @relation(fields: [travelInfoId], references: [id], onDelete: Cascade)
   travelInfoId      String?        @unique
   documents         Document[]
-  payment           Payment?       @relation(fields: [paymentId], references: [id])
+  payment           Payment?       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
   paymentId         String?        @unique
   interviews        Interview[]
-  notifications     Notification[]
+  messages     Message[]
   fundingSource     String?
   monthlyIncome     Float?
 
   @@index([userId])
-  @@index([status])
+  @@index([status]) 
   @@index([applicationNumber])
 }
 
 model PersonalInfo {
   id                     String           @id @default(uuid())
-  user                   User             @relation(fields: [userId], references: [id])
+  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId                 String           @unique
   firstName              String
   lastName               String
@@ -161,7 +162,7 @@ model TravelInfo {
 
 model Document {
   id                 String             @id @default(uuid())
-  application        VisaApplication    @relation(fields: [applicationId], references: [id])
+  application        VisaApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId      String
   documentType       String // Changed to simple string field
   fileName           String
@@ -180,7 +181,7 @@ model Document {
 model Payment {
   id              String           @id @default(uuid())
   application     VisaApplication?
-  user            User             @relation(fields: [userId], references: [id])
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
   amount          Float
   currency        String           @default("USD")
@@ -198,9 +199,9 @@ model Payment {
 
 model Interview {
   id            String          @id @default(uuid())
-  application   VisaApplication @relation(fields: [applicationId], references: [id])
+  application   VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId String
-  officer       User            @relation(fields: [officerId], references: [id])
+  officer       User            @relation(fields: [officerId], references: [id], onDelete: Cascade)
   officerId     String
   scheduledDate DateTime
   location      String
@@ -215,20 +216,25 @@ model Interview {
   @@index([status])
 }
 
-model Notification {
-  id            String           @id @default(uuid())
-  user          User             @relation(fields: [userId], references: [id])
-  userId        String
-  application   VisaApplication? @relation(fields: [applicationId], references: [id])
-  applicationId String?
-  type          NotificationType
-  message       String
-  isRead        Boolean          @default(false)
-  createdAt     DateTime         @default(now())
+model Message {
+  id String @id @default(uuid())
+  sender User @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId String
+  recipient User @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+  content String?
+  isRead Boolean @default(false)
+  application VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
+  replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade)
+  replyToId String?
+  replies Message[] @relation("MessageReplies")
+  attachments String[] @default([])
+  createdAt DateTime @default(now())
 
-  @@index([userId])
+  @@index([senderId])
+  @@index([recipientId])
   @@index([applicationId])
-  @@index([type])
 }
 
 enum Role {
@@ -268,13 +274,4 @@ enum InterviewStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
-}
-
-enum NotificationType {
-  APPLICATION_SUBMITTED
-  APPLICATION_STATUS_UPDATED
-  INTERVIEW_SCHEDULED
-  PAYMENT_COMPLETED
-  DOCUMENT_REQUIRED
-  SYSTEM_ALERT
 }
