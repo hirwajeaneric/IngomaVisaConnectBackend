@@ -141,19 +141,13 @@ export class MessageService {
     limit: number = 20
   ): Promise<{ messages: Message[]; total: number; page: number; totalPages: number }> {
     try {
-      // Verify user has access to this application
-      const application = await prisma.visaApplication.findFirst({
-        where: {
-          id: applicationId,
-          OR: [
-            { userId: userId },
-            { user: { role: { in: ['OFFICER', 'ADMIN'] } } }
-          ]
-        }
+      // Verify application exists (removed access control restriction)
+      const application = await prisma.visaApplication.findUnique({
+        where: { id: applicationId }
       });
 
       if (!application) {
-        throw new NotFoundError('Application not found or access denied');
+        throw new NotFoundError('Application not found');
       }
 
       const skip = (page - 1) * limit;
@@ -655,6 +649,99 @@ export class MessageService {
       return { count };
     } catch (error) {
       throw new BadRequestError('Failed to get unread message count');
+    }
+  }
+
+  /**
+   * Get all messages where the user is the recipient
+   */
+  static async getMyMessages(
+    userId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ messages: Message[]; total: number; page: number; totalPages: number }> {
+    try {
+      const skip = (page - 1) * limit;
+
+      const [messages, total] = await Promise.all([
+        prisma.message.findMany({
+          where: { recipientId: userId },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            recipient: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            application: {
+              select: {
+                id: true,
+                applicationNumber: true,
+                status: true,
+                visaType: {
+                  select: {
+                    name: true,
+                  }
+                }
+              }
+            },
+            replyTo: {
+              select: {
+                id: true,
+                content: true,
+                sender: {
+                  select: {
+                    name: true,
+                  }
+                }
+              }
+            },
+            replies: {
+              include: {
+                sender: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                  }
+                },
+                recipient: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                  }
+                }
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.message.count({ where: { recipientId: userId } })
+      ]);
+
+      return {
+        messages,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit)
+      };
+    } catch (error) {
+      throw new BadRequestError('Failed to fetch your messages');
     }
   }
 }

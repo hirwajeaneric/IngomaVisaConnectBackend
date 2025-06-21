@@ -64,22 +64,18 @@ export class MessageController {
    * Get messages for a specific application
    * GET /api/messages/application/:applicationId
    */
-  static async getMessagesByApplication(req: AuthenticatedRequest, res: Response) {
+  static async getMessagesByApplication(req: Request, res: Response) {
     try {
       const { applicationId } = req.params;
-      const userId = req.user?.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
-
-      if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
-      }
 
       if (!applicationId) {
         throw new BadRequestError('Application ID is required');
       }
 
-      const result = await MessageService.getMessagesByApplication(applicationId, userId, page, limit);
+      // Use a dummy userId since we removed access control
+      const result = await MessageService.getMessagesByApplication(applicationId, 'dummy', page, limit);
 
       res.status(200).json({
         success: true,
@@ -87,8 +83,8 @@ export class MessageController {
         message: 'Messages retrieved successfully'
       });
     } catch (error) {
-      if (error instanceof BadRequestError || error instanceof NotFoundError || error instanceof UnauthorizedError) {
-        res.status(error instanceof BadRequestError ? 400 : error instanceof NotFoundError ? 404 : 401).json({
+      if (error instanceof BadRequestError || error instanceof NotFoundError) {
+        res.status(error instanceof BadRequestError ? 400 : 404).json({
           success: false,
           message: error.message
         });
@@ -401,6 +397,42 @@ export class MessageController {
         success: true,
         data: result,
         message: 'Unread count retrieved successfully'
+      });
+    } catch (error) {
+      if (error instanceof BadRequestError || error instanceof UnauthorizedError) {
+        res.status(error instanceof BadRequestError ? 400 : 401).json({
+          success: false,
+          message: error.message
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error'
+        });
+      }
+    }
+  }
+
+  /**
+   * Get all messages where the authenticated user is the recipient
+   * GET /api/messages/mine
+   */
+  static async getMyMessages(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      if (!userId) {
+        throw new UnauthorizedError('User not authenticated');
+      }
+
+      const result = await MessageService.getMyMessages(userId, page, limit);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Your messages retrieved successfully'
       });
     } catch (error) {
       if (error instanceof BadRequestError || error instanceof UnauthorizedError) {

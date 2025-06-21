@@ -34,6 +34,8 @@ model User {
   interviews           Interview[]
   sentMessages         Message[]         @relation("sender")
   receivedMessages     Message[]         @relation("recipient")
+  notes                Notes[]
+  assignedApplications VisaApplication[] @relation("officer")
 
   @@index([email])
 }
@@ -83,32 +85,50 @@ model VisaType {
 }
 
 model VisaApplication {
-  id                String         @id @default(uuid())
-  applicationNumber String         @unique
-  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String        @id @default(uuid())
+  applicationNumber String        @unique
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId            String
-  visaType          VisaType       @relation(fields: [visaTypeId], references: [id], onDelete: Cascade)
+  visaType          VisaType      @relation(fields: [visaTypeId], references: [id], onDelete: Cascade)
   visaTypeId        String
   status            Status
+  officerId         String?
+  officer           User?         @relation("officer", fields: [officerId], references: [id], onDelete: Cascade)
   submissionDate    DateTime?
   decisionDate      DateTime?
   expiryDate        DateTime?
   rejectionReason   String?
-  personalInfo      PersonalInfo?  @relation(fields: [personalInfoId], references: [id], onDelete: Cascade)
-  personalInfoId    String?        @unique
-  travelInfo        TravelInfo?    @relation(fields: [travelInfoId], references: [id], onDelete: Cascade)
-  travelInfoId      String?        @unique
+  personalInfo      PersonalInfo? @relation(fields: [personalInfoId], references: [id], onDelete: Cascade)
+  personalInfoId    String?       @unique
+  travelInfo        TravelInfo?   @relation(fields: [travelInfoId], references: [id], onDelete: Cascade)
+  travelInfoId      String?       @unique
   documents         Document[]
-  payment           Payment?       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  paymentId         String?        @unique
+  payment           Payment?      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  paymentId         String?       @unique
   interviews        Interview[]
-  messages     Message[]
+  messages          Message[]
   fundingSource     String?
   monthlyIncome     Float?
+  notes             Notes[]
 
   @@index([userId])
-  @@index([status]) 
+  @@index([status])
   @@index([applicationNumber])
+}
+
+model Notes {
+  id            String          @id @default(uuid())
+  applicationId String
+  application   VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  content       String
+  officerId     String
+  officer       User            @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([applicationId])
+  @@index([officerId])
+  @@index([createdAt])
 }
 
 model PersonalInfo {
@@ -217,20 +237,20 @@ model Interview {
 }
 
 model Message {
-  id String @id @default(uuid())
-  sender User @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
-  senderId String
-  recipient User @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  recipientId String
-  content String?
-  isRead Boolean @default(false)
-  application VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  id            String          @id @default(uuid())
+  sender        User            @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId      String
+  recipient     User            @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId   String
+  content       String?
+  isRead        Boolean         @default(false)
+  application   VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId String
-  replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade)
-  replyToId String?
-  replies Message[] @relation("MessageReplies")
-  attachments String[] @default([])
-  createdAt DateTime @default(now())
+  replyTo       Message?        @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: Cascade)
+  replyToId     String?
+  replies       Message[]       @relation("MessageReplies")
+  attachments   String[]        @default([])
+  createdAt     DateTime        @default(now())
 
   @@index([senderId])
   @@index([recipientId])

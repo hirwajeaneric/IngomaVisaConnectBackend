@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import { Status, VisaApplication } from '../generated/prisma';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../utils/errors';
+import { MailUtil } from '../utils/mail.utils';
 
 export class VisaApplicationService {
   async createApplication(userId: string, visaTypeId: string): Promise<any> {
@@ -89,7 +90,15 @@ export class VisaApplicationService {
         personalInfo: true,
         travelInfo: true,
         documents: true,
-        payment: true
+        payment: true,
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        }
       }
     });
 
@@ -119,6 +128,14 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        }
       },
       orderBy: { submissionDate: 'desc' }
     });
@@ -134,6 +151,13 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         visaType: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
       }
     });
 
@@ -154,11 +178,15 @@ export class VisaApplicationService {
       throw new BadRequestError('Personal and travel information are required');
     }
 
+    // Assign officer automatically based on workload
+    const assignedOfficer = await this.assignOfficerToApplication();
+
     const updatedApplication = await prisma.visaApplication.update({
       where: { id: applicationId },
       data: {
         status: Status.SUBMITTED,
         submissionDate: new Date(),
+        officerId: assignedOfficer?.id || null,
       },
       include: {
         visaType: true,
@@ -166,8 +194,29 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        }
       }
     });
+
+    // Send email notification to user
+    try {
+      await MailUtil.sendApplicationSubmittedEmail(
+        application.user.email,
+        application.applicationNumber,
+        application.visaType.name,
+        assignedOfficer?.name
+      );
+    } catch (error) {
+      console.error('Failed to send application submitted email:', error);
+      // Don't fail the operation if email fails
+    }
 
     await this.logAuditEvent(userId, 'APPLICATION_SUBMITTED', `Submitted application: ${application.applicationNumber}`);
     return this.mapToApplicationDto(updatedApplication);
@@ -187,6 +236,13 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
       }
     });
 
@@ -197,6 +253,8 @@ export class VisaApplicationService {
     if (application.status === status) {
       throw new BadRequestError('Application is already in this status');
     }
+
+    const oldStatus = application.status;
 
     const updatedApplication = await prisma.visaApplication.update({
       where: { id: applicationId },
@@ -214,8 +272,31 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        }
       }
     });
+
+    // Send email notification to user about status change
+    try {
+      await MailUtil.sendApplicationStatusChangeEmail(
+        application.user.email,
+        application.applicationNumber,
+        application.visaType.name,
+        oldStatus,
+        status,
+        rejectionReason
+      );
+    } catch (error) {
+      console.error('Failed to send status change email:', error);
+      // Don't fail the operation if email fails
+    }
 
     await this.logAuditEvent(
       officerId, 
@@ -230,10 +311,81 @@ export class VisaApplicationService {
     const applications = await prisma.visaApplication.findMany({
       include: {
         visaType: true,
-        user: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        },
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        }
       }
     });
     return applications;
+  }
+
+  /**
+   * Assign an officer to an application based on workload
+   * Officers with fewer assigned applications get priority
+   */
+  private async assignOfficerToApplication(): Promise<any> {
+    try {
+      // Get all active officers
+      const officers = await prisma.user.findMany({
+        where: {
+          role: 'OFFICER',
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        }
+      });
+
+      if (officers.length === 0) {
+        console.log('[VisaApplicationService] No active officers found');
+        return null;
+      }
+
+      // Get application count for each officer
+      const officerWorkloads = await Promise.all(
+        officers.map(async (officer) => {
+          const applicationCount = await prisma.visaApplication.count({
+            where: {
+              officerId: officer.id,
+              status: {
+                in: [Status.SUBMITTED, Status.UNDER_REVIEW]
+              }
+            }
+          });
+          return { ...officer, applicationCount };
+        })
+      );
+
+      // Sort by application count (ascending) and return the officer with least workload
+      const assignedOfficer = officerWorkloads.sort((a, b) => a.applicationCount - b.applicationCount)[0];
+
+      console.log('[VisaApplicationService] Assigned officer:', {
+        officerId: assignedOfficer.id,
+        officerName: assignedOfficer.name,
+        currentWorkload: assignedOfficer.applicationCount
+      });
+
+      return assignedOfficer;
+    } catch (error) {
+      console.error('[VisaApplicationService] Error assigning officer:', error);
+      return null;
+    }
   }
 
   private mapToApplicationDto(application: any): any {
@@ -252,6 +404,7 @@ export class VisaApplicationService {
       payment: application.payment,
       fundingSource: application.fundingSource,
       monthlyIncome: application.monthlyIncome,
+      officer: application.officer,
     };
   }
 
