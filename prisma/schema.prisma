@@ -9,19 +9,19 @@ datasource db {
 }
 
 model User {
-  id                   String            @id @default(uuid())
-  email                String            @unique
+  id                   String               @id @default(uuid())
+  email                String               @unique
   password             String
   name                 String
   role                 Role
   avatar               String?
   phone                String?
-  isActive             Boolean           @default(false)
-  createdAt            DateTime          @default(now())
+  isActive             Boolean              @default(false)
+  createdAt            DateTime             @default(now())
   lastLoginAt          DateTime?
   passwordResetToken   String?
   passwordResetExpires DateTime?
-  twoFactorEnabled     Boolean           @default(false)
+  twoFactorEnabled     Boolean              @default(false)
   twoFactorSecret      String?
   department           String?
   title                String?
@@ -31,12 +31,14 @@ model User {
   auditLogs            AuditLog[]
   personalInfo         PersonalInfo?
   payments             Payment[]
-  interviews           Interview[]
-  sentMessages         Message[]         @relation("sender")
-  receivedMessages     Message[]         @relation("recipient")
+  sentMessages         Message[]            @relation("sender")
+  receivedMessages     Message[]            @relation("recipient")
   notes                Notes[]
-  assignedApplications VisaApplication[] @relation("officer")
-  requestForDocuments RequestForDocument[]
+  assignedApplications VisaApplication[]    @relation("officer")
+  requestForDocuments  RequestForDocument[]
+  assignedInterviews   Interview[]          @relation("assignedOfficer")
+  Interview            Interview[]
+
   @@index([email])
 }
 
@@ -85,32 +87,33 @@ model VisaType {
 }
 
 model VisaApplication {
-  id                String        @id @default(uuid())
-  applicationNumber String        @unique
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            String
-  visaType          VisaType      @relation(fields: [visaTypeId], references: [id], onDelete: Cascade)
-  visaTypeId        String
-  status            Status
-  officerId         String?
-  officer           User?         @relation("officer", fields: [officerId], references: [id], onDelete: Cascade)
-  submissionDate    DateTime?
-  decisionDate      DateTime?
-  expiryDate        DateTime?
-  rejectionReason   String?
-  personalInfo      PersonalInfo? @relation(fields: [personalInfoId], references: [id], onDelete: Cascade)
-  personalInfoId    String?       @unique
-  travelInfo        TravelInfo?   @relation(fields: [travelInfoId], references: [id], onDelete: Cascade)
-  travelInfoId      String?       @unique
-  documents         Document[]
-  payment           Payment?      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  paymentId         String?       @unique
-  interviews        Interview[]
-  messages          Message[]
-  fundingSource     String?
-  monthlyIncome     Float?
-  notes             Notes[]
+  id                  String               @id @default(uuid())
+  applicationNumber   String               @unique
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  visaType            VisaType             @relation(fields: [visaTypeId], references: [id], onDelete: Cascade)
+  visaTypeId          String
+  status              Status
+  officerId           String?
+  officer             User?                @relation("officer", fields: [officerId], references: [id], onDelete: Cascade)
+  submissionDate      DateTime?
+  decisionDate        DateTime?
+  expiryDate          DateTime?
+  rejectionReason     String?
+  personalInfo        PersonalInfo?        @relation(fields: [personalInfoId], references: [id], onDelete: Cascade)
+  personalInfoId      String?              @unique
+  travelInfo          TravelInfo?          @relation(fields: [travelInfoId], references: [id], onDelete: Cascade)
+  travelInfoId        String?              @unique
+  documents           Document[]
+  payment             Payment?             @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  paymentId           String?              @unique
+  interviews          Interview[]
+  messages            Message[]
+  fundingSource       String?
+  monthlyIncome       Float?
+  notes               Notes[]
   requestForDocuments RequestForDocument[]
+
   @@index([userId])
   @@index([status])
   @@index([applicationNumber])
@@ -181,18 +184,18 @@ model TravelInfo {
 }
 
 model Document {
-  id                 String             @id @default(uuid())
-  application        VisaApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId      String
-  documentType       String // Changed to simple string field
-  fileName           String
-  filePath           String
-  fileSize           Int
-  uploadDate         DateTime           @default(now())
-  verificationStatus VerificationStatus @default(PENDING)
-  verifiedBy         String?
-  verifiedAt         DateTime?
-  rejectionReason    String?
+  id                  String               @id @default(uuid())
+  application         VisaApplication      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId       String
+  documentType        String // Changed to simple string field
+  fileName            String
+  filePath            String
+  fileSize            Int
+  uploadDate          DateTime             @default(now())
+  verificationStatus  VerificationStatus   @default(PENDING)
+  verifiedBy          String?
+  verifiedAt          DateTime?
+  rejectionReason     String?
   requestForDocuments RequestForDocument[] @relation("document")
 
   @@index([applicationId])
@@ -200,18 +203,18 @@ model Document {
 }
 
 model RequestForDocument {
-  id String @id @default(uuid())
-  applicationId String
-  application VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  documentName String
+  id                String                   @id @default(uuid())
+  applicationId     String
+  application       VisaApplication          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  documentName      String
   additionalDetails String?
-  status RequestForDocumentStatus @default(SENT)
-  officerId String
-  officer User @relation(fields: [officerId], references: [id], onDelete: Cascade)
-  document Document? @relation("document", fields: [documentId], references: [id], onDelete: Cascade)
-  documentId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status            RequestForDocumentStatus @default(SENT)
+  officerId         String
+  officer           User                     @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  document          Document?                @relation("document", fields: [documentId], references: [id], onDelete: Cascade)
+  documentId        String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
 
   @@index([applicationId])
   @@index([officerId])
@@ -238,18 +241,25 @@ model Payment {
 }
 
 model Interview {
-  id            String          @id @default(uuid())
-  application   VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId String
-  officer       User            @relation(fields: [officerId], references: [id], onDelete: Cascade)
-  officerId     String
-  scheduledDate DateTime
-  location      String
-  status        InterviewStatus
-  notes         String?
-  outcome       String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              String          @id @default(uuid())
+  application     VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId   String
+  assignedOfficer User            @relation("assignedOfficer", fields: [officerId], references: [id], onDelete: Cascade)
+  officerId       String
+  officerName     String
+  scheduledDate   DateTime
+  location        String
+  status          InterviewStatus
+  scheduler       String?
+  schedulerId     String?
+  confirmed       Boolean         @default(false)
+  confirmedAt     DateTime?
+  notes           String?
+  outcome         String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  User            User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?
 
   @@index([applicationId])
   @@index([officerId])
@@ -318,6 +328,7 @@ enum RefundStatus {
 
 enum InterviewStatus {
   SCHEDULED
+  RESCHEDULED
   COMPLETED
   CANCELLED
 }

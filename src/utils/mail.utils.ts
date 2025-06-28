@@ -244,4 +244,249 @@ export class MailUtil {
             `,
         });
     }
+
+    static async sendInterviewScheduledEmail(
+        applicantEmail: string,
+        applicationNumber: string,
+        visaType: string,
+        scheduledDate: string,
+        location: string,
+        officerName: string,
+        notes?: string
+    ): Promise<void> {
+        const formattedDate = new Date(scheduledDate).toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+
+        await this.sendMail({
+            to: applicantEmail,
+            subject: 'IngomaVisaConnect - Visa Interview Scheduled',
+            html: `
+                <h2>Visa Interview Scheduled</h2>
+                <p>Dear Applicant,</p>
+                <p>Your visa interview has been scheduled successfully.</p>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>Interview Details:</h3>
+                    <ul>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Visa Type:</strong> ${visaType}</li>
+                        <li><strong>Date & Time:</strong> ${formattedDate}</li>
+                        <li><strong>Location:</strong> ${location}</li>
+                        <li><strong>Interview Officer:</strong> ${officerName}</li>
+                    </ul>
+                </div>
+                ${notes ? `
+                <div style="background-color: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                    <h4>Additional Information:</h4>
+                    <p>${notes}</p>
+                </div>
+                ` : ''}
+                <p><strong>What you need to do:</strong></p>
+                <ol>
+                    <li>Log into your account to confirm the interview</li>
+                    <li>Prepare all required documents</li>
+                    <li>Arrive at the location 15 minutes before the scheduled time</li>
+                    <li>Bring your passport and application documents</li>
+                </ol>
+                <p><strong>Interview Preparation Tips:</strong></p>
+                <ul>
+                    <li>Have your passport and application documents ready</li>
+                    <li>Dress formally as you would for an important meeting</li>
+                    <li>Be prepared to answer questions about your travel plans</li>
+                    <li>Bring any additional documents that might be relevant</li>
+                </ul>
+                <p>Please confirm your attendance by logging into your account and clicking the confirmation button.</p>
+                <p>If you have any questions or need to reschedule, please contact our support team immediately.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
+
+    static async sendInterviewRescheduledEmail(
+        applicantEmail: string,
+        applicationNumber: string,
+        visaType: string,
+        oldScheduledDate: string,
+        newScheduledDate: string,
+        oldLocation: string,
+        newLocation: string,
+        officerName: string
+    ): Promise<void> {
+        const oldFormattedDate = new Date(oldScheduledDate).toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+
+        const newFormattedDate = new Date(newScheduledDate).toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+
+        await this.sendMail({
+            to: applicantEmail,
+            subject: 'IngomaVisaConnect - Interview Rescheduled',
+            html: `
+                <h2>Interview Rescheduled</h2>
+                <p>Dear Applicant,</p>
+                <p>Your visa interview has been rescheduled by our immigration officer.</p>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>Previous Interview Details:</h3>
+                    <ul>
+                        <li><strong>Date & Time:</strong> ${oldFormattedDate}</li>
+                        <li><strong>Location:</strong> ${oldLocation}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                    <h3>New Interview Details:</h3>
+                    <ul>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Visa Type:</strong> ${visaType}</li>
+                        <li><strong>Date & Time:</strong> ${newFormattedDate}</li>
+                        <li><strong>Location:</strong> ${newLocation}</li>
+                        <li><strong>Interview Officer:</strong> ${officerName}</li>
+                    </ul>
+                </div>
+                <p>Please update your calendar and confirm your attendance for the new date and time.</p>
+                <p>If you have any questions about the rescheduling, please contact our support team.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
+
+    static async sendInterviewCancelledEmail(
+        applicantEmail: string,
+        applicationNumber: string,
+        visaType: string,
+        scheduledDate: string,
+        location: string,
+        officerName: string
+    ): Promise<void> {
+        const formattedDate = new Date(scheduledDate).toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+
+        await this.sendMail({
+            to: applicantEmail,
+            subject: 'IngomaVisaConnect - Interview Cancelled',
+            html: `
+                <h2>Interview Cancelled</h2>
+                <p>Dear Applicant,</p>
+                <p>Your visa interview has been cancelled by our immigration officer.</p>
+                <div style="background-color: #f8d7da; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+                    <h3>Cancelled Interview Details:</h3>
+                    <ul>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Visa Type:</strong> ${visaType}</li>
+                        <li><strong>Date & Time:</strong> ${formattedDate}</li>
+                        <li><strong>Location:</strong> ${location}</li>
+                        <li><strong>Cancelled By:</strong> ${officerName}</li>
+                    </ul>
+                </div>
+                <p>A new interview will be scheduled and you will be notified accordingly.</p>
+                <p>Your application processing will continue, and you will receive updates on any new interview arrangements.</p>
+                <p>If you have any questions about the cancellation, please contact our support team.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
+
+    static async sendInterviewConfirmedEmail(
+        officerEmail: string,
+        applicantName: string,
+        applicationNumber: string,
+        visaType: string,
+        scheduledDate: string,
+        location: string
+    ): Promise<void> {
+        const formattedDate = new Date(scheduledDate).toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+
+        await this.sendMail({
+            to: officerEmail,
+            subject: 'IngomaVisaConnect - Interview Confirmed by Applicant',
+            html: `
+                <h2>Interview Confirmed</h2>
+                <p>Dear Officer,</p>
+                <p>The applicant has confirmed their attendance for the scheduled interview.</p>
+                <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                    <h3>Confirmed Interview Details:</h3>
+                    <ul>
+                        <li><strong>Applicant Name:</strong> ${applicantName}</li>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Visa Type:</strong> ${visaType}</li>
+                        <li><strong>Date & Time:</strong> ${formattedDate}</li>
+                        <li><strong>Location:</strong> ${location}</li>
+                        <li><strong>Confirmation Date:</strong> ${new Date().toLocaleDateString()}</li>
+                    </ul>
+                </div>
+                <p>The applicant is expected to attend the interview at the scheduled time and location.</p>
+                <p>Please ensure you have all necessary documents and information ready for the interview.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
+
+    static async sendInterviewCompletedEmail(
+        applicantEmail: string,
+        applicationNumber: string,
+        visaType: string,
+        outcome: string,
+        officerName: string
+    ): Promise<void> {
+        await this.sendMail({
+            to: applicantEmail,
+            subject: 'IngomaVisaConnect - Interview Completed',
+            html: `
+                <h2>Interview Completed</h2>
+                <p>Dear Applicant,</p>
+                <p>Your visa interview has been completed successfully.</p>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>Interview Summary:</h3>
+                    <ul>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Visa Type:</strong> ${visaType}</li>
+                        <li><strong>Interview Officer:</strong> ${officerName}</li>
+                        <li><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                    <h4>Interview Outcome:</h4>
+                    <p>${outcome}</p>
+                </div>
+                <p>Your application will continue to be processed based on the interview outcome.</p>
+                <p>You will receive further updates on your application status as the processing continues.</p>
+                <p>If you have any questions about the interview or your application, please contact our support team.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
 }

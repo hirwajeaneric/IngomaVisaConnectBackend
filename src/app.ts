@@ -13,6 +13,7 @@ import documentRoutes from "./routes/document.routes";
 import financialInfoRoutes from "./routes/financialInfo.routes";
 import messageRoutes from "./routes/message.routes";
 import requestForDocumentRoutes from "./routes/requestForDocument.routes";
+import interviewRoutes from "./routes/interview.routes";
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import paymentRoutes from './routes/payment.routes';
 
@@ -47,6 +48,7 @@ app.use('/api/financial-info', financialInfoRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/document-requests', requestForDocumentRoutes);
+app.use('/api/interviews', interviewRoutes);
 
 // Error handling
 app.use(notFoundHandler);
