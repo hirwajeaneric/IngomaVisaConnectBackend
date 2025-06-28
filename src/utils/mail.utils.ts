@@ -140,4 +140,108 @@ export class MailUtil {
             `,
         });
     }
+
+    static async sendDocumentRequestCreatedEmail(
+        applicantEmail: string, 
+        applicationNumber: string, 
+        documentName: string, 
+        additionalDetails?: string,
+        officerName?: string
+    ): Promise<void> {
+        await this.sendMail({
+            to: applicantEmail,
+            subject: 'IngomaVisaConnect - Additional Document Requested',
+            html: `
+                <h2>Additional Document Requested</h2>
+                <p>Dear Applicant,</p>
+                <p>Our immigration officer has requested an additional document for your visa application.</p>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>Request Details:</h3>
+                    <ul>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Document Required:</strong> ${documentName}</li>
+                        ${officerName ? `<li><strong>Requested By:</strong> ${officerName}</li>` : ''}
+                        <li><strong>Request Date:</strong> ${new Date().toLocaleDateString()}</li>
+                    </ul>
+                </div>
+                ${additionalDetails ? `
+                <div style="background-color: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                    <h4>Additional Information:</h4>
+                    <p>${additionalDetails}</p>
+                </div>
+                ` : ''}
+                <p><strong>What you need to do:</strong></p>
+                <ol>
+                    <li>Log into your account</li>
+                    <li>Navigate to your application</li>
+                    <li>Upload the requested document</li>
+                    <li>Submit the document for review</li>
+                </ol>
+                <p>Please ensure that the document is clear, legible, and meets the requirements specified above.</p>
+                <p>Your application processing will continue once the requested document is received and verified.</p>
+                <p>If you have any questions about this request or need assistance, please contact our support team.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
+
+    static async sendDocumentRequestCancelledEmail(
+        applicantEmail: string, 
+        applicationNumber: string, 
+        documentName: string,
+        officerName?: string
+    ): Promise<void> {
+        await this.sendMail({
+            to: applicantEmail,
+            subject: 'IngomaVisaConnect - Document Request Cancelled',
+            html: `
+                <h2>Document Request Cancelled</h2>
+                <p>Dear Applicant,</p>
+                <p>The request for an additional document has been cancelled by our immigration officer.</p>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>Cancelled Request Details:</h3>
+                    <ul>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Document:</strong> ${documentName}</li>
+                        ${officerName ? `<li><strong>Cancelled By:</strong> ${officerName}</li>` : ''}
+                        <li><strong>Cancellation Date:</strong> ${new Date().toLocaleDateString()}</li>
+                    </ul>
+                </div>
+                <p>You no longer need to provide this document. Your application will continue to be processed with the documents already submitted.</p>
+                <p>If you have any questions about this cancellation, please contact our support team.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
+
+    static async sendDocumentSubmittedForRequestEmail(
+        officerEmail: string,
+        applicantName: string,
+        applicationNumber: string,
+        documentName: string,
+        fileName: string
+    ): Promise<void> {
+        await this.sendMail({
+            to: officerEmail,
+            subject: 'IngomaVisaConnect - Document Submitted for Review',
+            html: `
+                <h2>Document Submitted for Review</h2>
+                <p>Dear Officer,</p>
+                <p>A document has been submitted in response to your request.</p>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3>Submission Details:</h3>
+                    <ul>
+                        <li><strong>Applicant Name:</strong> ${applicantName}</li>
+                        <li><strong>Application Number:</strong> ${applicationNumber}</li>
+                        <li><strong>Requested Document:</strong> ${documentName}</li>
+                        <li><strong>Submitted File:</strong> ${fileName}</li>
+                        <li><strong>Submission Date:</strong> ${new Date().toLocaleDateString()}</li>
+                    </ul>
+                </div>
+                <p>Please review the submitted document and update the application status accordingly.</p>
+                <p>You can access the application through the admin dashboard to review the document.</p>
+                <p>Best regards,<br>IngomaVisaConnect Team</p>
+            `,
+        });
+    }
 }

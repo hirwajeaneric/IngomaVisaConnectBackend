@@ -91,6 +91,20 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        requestForDocuments: {
+          include: {
+            officer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            document: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
         officer: {
           select: {
             id: true,
@@ -128,6 +142,20 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        requestForDocuments: {
+          include: {
+            officer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            document: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
         officer: {
           select: {
             id: true,
@@ -151,6 +179,20 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         visaType: true,
+        requestForDocuments: {
+          include: {
+            officer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            document: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
         user: {
           select: {
             id: true,
@@ -194,6 +236,20 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        requestForDocuments: {
+          include: {
+            officer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            document: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
         officer: {
           select: {
             id: true,
@@ -236,6 +292,20 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        requestForDocuments: {
+          include: {
+            officer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            document: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
         user: {
           select: {
             id: true,
@@ -272,6 +342,20 @@ export class VisaApplicationService {
         travelInfo: true,
         documents: true,
         payment: true,
+        requestForDocuments: {
+          include: {
+            officer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            },
+            document: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
         officer: {
           select: {
             id: true,
@@ -405,6 +489,7 @@ export class VisaApplicationService {
       fundingSource: application.fundingSource,
       monthlyIncome: application.monthlyIncome,
       officer: application.officer,
+      requestForDocuments: application.requestForDocuments,
     };
   }
 

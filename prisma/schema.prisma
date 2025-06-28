@@ -36,7 +36,7 @@ model User {
   receivedMessages     Message[]         @relation("recipient")
   notes                Notes[]
   assignedApplications VisaApplication[] @relation("officer")
-
+  requestForDocuments RequestForDocument[]
   @@index([email])
 }
 
@@ -110,7 +110,7 @@ model VisaApplication {
   fundingSource     String?
   monthlyIncome     Float?
   notes             Notes[]
-
+  requestForDocuments RequestForDocument[]
   @@index([userId])
   @@index([status])
   @@index([applicationNumber])
@@ -193,9 +193,29 @@ model Document {
   verifiedBy         String?
   verifiedAt         DateTime?
   rejectionReason    String?
+  requestForDocuments RequestForDocument[] @relation("document")
 
   @@index([applicationId])
   @@index([verificationStatus])
+}
+
+model RequestForDocument {
+  id String @id @default(uuid())
+  applicationId String
+  application VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  documentName String
+  additionalDetails String?
+  status RequestForDocumentStatus @default(SENT)
+  officerId String
+  officer User @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  document Document? @relation("document", fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([officerId])
+  @@index([documentId])
 }
 
 model Payment {
@@ -255,6 +275,12 @@ model Message {
   @@index([senderId])
   @@index([recipientId])
   @@index([applicationId])
+}
+
+enum RequestForDocumentStatus {
+  SENT
+  SUBMITTED
+  CANCELLED
 }
 
 enum Role {
