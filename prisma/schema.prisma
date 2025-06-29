@@ -142,7 +142,7 @@ model PersonalInfo {
   lastName               String
   dateOfBirth            DateTime
   nationality            String
-  passportNumber         String           @unique
+  passportNumber         String           
   passportIssueDate      DateTime
   passportExpiryDate     DateTime
   passportIssuingCountry String

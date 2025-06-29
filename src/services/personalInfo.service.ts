@@ -60,15 +60,6 @@ export class PersonalInfoService {
       throw new BadRequestError('Passport must be valid for at least 6 months');
     }
 
-    // Check if passport number is already in use by another user
-    const existingPassport = await prisma.personalInfo.findUnique({
-      where: { passportNumber: formattedData.passportNumber }
-    });
-
-    if (existingPassport && existingPassport.userId !== userId) {
-      throw new BadRequestError('Passport number is already registered to another user');
-    }
-
     // Use upsert to handle both create and update cases
     const personalInfo = await prisma.personalInfo.upsert({
       where: {
