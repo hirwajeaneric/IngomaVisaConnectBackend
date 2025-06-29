@@ -11,6 +11,7 @@ export class InterviewController {
     authenticate,
     authorize('APPLICATIONS_MANAGE_APPLICATIONS'),
     check('applicationId').isUUID().withMessage('Invalid application ID'),
+    check('assignedOfficerId').isUUID().withMessage('Invalid assigned officer ID'),
     check('scheduledDate').isISO8601().withMessage('Invalid scheduled date'),
     check('location').notEmpty().withMessage('Location is required'),
     check('notes').optional().isString().withMessage('Notes must be a string'),
@@ -20,15 +21,16 @@ export class InterviewController {
         throw new BadRequestError(errors.array()[0].msg);
       }
 
-      const officerId = req.user?.id;
-      if (!officerId) {
+      const schedulerId = req.user?.id;
+      if (!schedulerId) {
         throw new BadRequestError('User not authenticated');
       }
 
-      const { scheduledDate, location, notes } = req.body;
+      const { applicationId, assignedOfficerId, scheduledDate, location, notes } = req.body;
       const interview = await interviewService.createInterview(
-        officerId,
-        req.params.applicationId,
+        schedulerId,
+        applicationId,
+        assignedOfficerId,
         { scheduledDate, location, notes }
       );
 
@@ -247,6 +249,36 @@ export class InterviewController {
         success: true,
         message: 'Interview marked as completed successfully',
         data: interview
+      });
+    }
+  ];
+
+  // New endpoint to get officers for assignment
+  static getOfficersForAssignment = [
+    authenticate,
+    authorize('APPLICATIONS_MANAGE_APPLICATIONS'),
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      const officers = await interviewService.getOfficersForAssignment();
+
+      res.json({
+        success: true,
+        message: 'Officers retrieved successfully',
+        data: officers
+      });
+    }
+  ];
+
+  // New endpoint to get applications for interview scheduling
+  static getApplicationsForInterviewScheduling = [
+    authenticate,
+    authorize('APPLICATIONS_MANAGE_APPLICATIONS'),
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      const applications = await interviewService.getApplicationsForInterviewScheduling();
+
+      res.json({
+        success: true,
+        message: 'Applications retrieved successfully',
+        data: applications
       });
     }
   ];

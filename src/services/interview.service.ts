@@ -1,27 +1,36 @@
-import { PrismaClient } from '../generated/prisma';
-import { ForbiddenError, NotFoundError } from '../utils/errors';
+import prisma from '../config/database';
+import { InterviewStatus } from '../generated/prisma';
+import { BadRequestError, NotFoundError, ForbiddenError } from '../utils/errors';
 import { MailUtil } from '../utils/mail.utils';
 
-const prisma = new PrismaClient();
-
 export class InterviewService {
-  // Create a new interview (officer only)
-  async createInterview(applicationId: string, officerId: string, data: {
-    scheduledDate: string;
-    location: string;
-    notes?: string;
-  }) {
-    // Check if user is an officer
-    const officer = await prisma.user.findUnique({
-      where: { id: officerId },
-      select: { role: true, name: true }
+  async createInterview(
+    schedulerId: string,
+    applicationId: string,
+    assignedOfficerId: string,
+    data: {
+      scheduledDate: string;
+      location: string;
+      notes?: string;
+    }
+  ): Promise<any> {
+    // Verify the scheduler exists and has proper permissions
+    const scheduler = await prisma.user.findUnique({
+      where: { id: schedulerId }
     });
-
-    if (!officer || officer.role !== 'OFFICER') {
-      throw new ForbiddenError('Only officers can create interviews');
+    if (!scheduler || !['ADMIN', 'OFFICER'].includes(scheduler.role)) {
+      throw new ForbiddenError('Only officers and admins can schedule interviews');
     }
 
-    // Check if application exists
+    // Verify the assigned officer exists and is an officer
+    const assignedOfficer = await prisma.user.findUnique({
+      where: { id: assignedOfficerId }
+    });
+    if (!assignedOfficer || assignedOfficer.role !== 'OFFICER') {
+      throw new BadRequestError('Invalid assigned officer');
+    }
+
+    // Verify the application exists
     const application = await prisma.visaApplication.findUnique({
       where: { id: applicationId },
       include: {
@@ -39,23 +48,36 @@ export class InterviewService {
         }
       }
     });
-
     if (!application) {
       throw new NotFoundError('Application not found');
     }
 
-    // Create the interview
+    // Check if there's already a scheduled interview for this application
+    const existingInterview = await prisma.interview.findFirst({
+      where: {
+        applicationId,
+        status: {
+          in: ['SCHEDULED', 'RESCHEDULED']
+        }
+      }
+    });
+
+    if (existingInterview) {
+      throw new BadRequestError('An interview is already scheduled for this application');
+    }
+
     const interview = await prisma.interview.create({
       data: {
         applicationId,
-        officerId,
-        officerName: officer.name,
+        assignedOfficerId,
+        assignedOfficerName: assignedOfficer.name,
+        schedulerId,
+        schedulerName: scheduler.name,
         scheduledDate: new Date(data.scheduledDate),
         location: data.location,
-        status: 'SCHEDULED',
+        status: InterviewStatus.SCHEDULED,
         notes: data.notes,
-        scheduler: officer.name,
-        schedulerId: officerId
+        confirmed: false,
       },
       include: {
         application: {
@@ -81,6 +103,14 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -93,22 +123,22 @@ export class InterviewService {
         application.visaType.name,
         interview.scheduledDate.toISOString(),
         interview.location,
-        officer.name,
+        assignedOfficer.name,
         data.notes
       );
     } catch (error) {
       console.error('Failed to send interview scheduled email:', error);
     }
 
-    return {
-      success: true,
-      message: 'Interview scheduled successfully',
-      data: interview
-    };
+    return this.mapToInterviewDto(interview);
   }
 
-  // Get a specific interview by ID
-  async getInterviewById(interviewId: string, userId: string) {
+  async getInterviewById(userId: string, interviewId: string): Promise<any> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
       include: {
@@ -135,6 +165,14 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -143,59 +181,30 @@ export class InterviewService {
       throw new NotFoundError('Interview not found');
     }
 
-    // Check if user has access to this interview
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true, id: true }
-    });
-
-    if (!user) {
-      throw new ForbiddenError('User not found');
-    }
-
-    const hasAccess = 
-      user.role === 'OFFICER' || 
-      user.role === 'ADMIN' || 
-      interview.application.userId === userId;
-
-    if (!hasAccess) {
+    // Check access permissions
+    if (user.role === 'APPLICANT' && interview.application.userId !== userId) {
       throw new ForbiddenError('Access denied');
     }
 
-    return {
-      success: true,
-      message: 'Interview retrieved successfully',
-      data: interview
-    };
+    return this.mapToInterviewDto(interview);
   }
 
-  // Get all interviews for an application
-  async getApplicationInterviews(applicationId: string, userId: string) {
-    // Check if user has access to this application
+  async getApplicationInterviews(userId: string, applicationId: string): Promise<any[]> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
     const application = await prisma.visaApplication.findUnique({
-      where: { id: applicationId },
-      select: { userId: true }
+      where: { id: applicationId }
     });
 
     if (!application) {
       throw new NotFoundError('Application not found');
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true, id: true }
-    });
-
-    if (!user) {
-      throw new ForbiddenError('User not found');
-    }
-
-    const hasAccess = 
-      user.role === 'OFFICER' || 
-      user.role === 'ADMIN' || 
-      application.userId === userId;
-
-    if (!hasAccess) {
+    // Check access permissions
+    if (user.role === 'APPLICANT' && application.userId !== userId) {
       throw new ForbiddenError('Access denied');
     }
 
@@ -225,31 +234,35 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       },
-      orderBy: { scheduledDate: 'asc' }
+      orderBy: { scheduledDate: 'desc' }
     });
 
-    return {
-      success: true,
-      message: 'Interviews retrieved successfully',
-      data: interviews
-    };
+    return interviews.map(this.mapToInterviewDto);
   }
 
-  // Get all interviews scheduled by an officer
-  async getOfficerInterviews(officerId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: officerId },
-      select: { role: true }
-    });
-
-    if (!user || user.role !== 'OFFICER') {
-      throw new ForbiddenError('Only officers can view their interviews');
+  async getOfficerInterviews(officerId: string): Promise<any[]> {
+    const officer = await prisma.user.findUnique({ where: { id: officerId } });
+    if (!officer || !['ADMIN', 'OFFICER'].includes(officer.role)) {
+      throw new ForbiddenError('Access denied');
     }
 
     const interviews = await prisma.interview.findMany({
-      where: { officerId },
+      where: {
+        OR: [
+          { assignedOfficerId: officerId },
+          { schedulerId: officerId }
+        ]
+      },
       include: {
         application: {
           include: {
@@ -274,27 +287,26 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       },
-      orderBy: { scheduledDate: 'asc' }
+      orderBy: { scheduledDate: 'desc' }
     });
 
-    return {
-      success: true,
-      message: 'Interviews retrieved successfully',
-      data: interviews
-    };
+    return interviews.map(this.mapToInterviewDto);
   }
 
-  // Get all interviews for the current applicant
-  async getApplicantInterviews(applicantId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: applicantId },
-      select: { role: true }
-    });
-
-    if (!user || user.role !== 'APPLICANT') {
-      throw new ForbiddenError('Only applicants can view their interviews');
+  async getApplicantInterviews(applicantId: string): Promise<any[]> {
+    const applicant = await prisma.user.findUnique({ where: { id: applicantId } });
+    if (!applicant) {
+      throw new NotFoundError('User not found');
     }
 
     const interviews = await prisma.interview.findMany({
@@ -327,31 +339,34 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       },
-      orderBy: { scheduledDate: 'asc' }
+      orderBy: { scheduledDate: 'desc' }
     });
 
-    return {
-      success: true,
-      message: 'Interviews retrieved successfully',
-      data: interviews
-    };
+    return interviews.map(this.mapToInterviewDto);
   }
 
-  // Reschedule an interview (officer only)
-  async rescheduleInterview(interviewId: string, officerId: string, data: {
-    scheduledDate?: string;
-    location?: string;
-    notes?: string;
-  }) {
-    const user = await prisma.user.findUnique({
-      where: { id: officerId },
-      select: { role: true, name: true }
-    });
-
-    if (!user || user.role !== 'OFFICER') {
-      throw new ForbiddenError('Only officers can reschedule interviews');
+  async rescheduleInterview(
+    officerId: string,
+    interviewId: string,
+    data: {
+      scheduledDate?: string;
+      location?: string;
+      notes?: string;
+    }
+  ): Promise<any> {
+    const officer = await prisma.user.findUnique({ where: { id: officerId } });
+    if (!officer || !['ADMIN', 'OFFICER'].includes(officer.role)) {
+      throw new ForbiddenError('Only officers and admins can reschedule interviews');
     }
 
     const interview = await prisma.interview.findUnique({
@@ -372,6 +387,22 @@ export class InterviewService {
               }
             }
           }
+        },
+        assignedOfficer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -380,12 +411,15 @@ export class InterviewService {
       throw new NotFoundError('Interview not found');
     }
 
-    if (interview.officerId !== officerId) {
-      throw new ForbiddenError('You can only reschedule your own interviews');
+    // Only the assigned officer or scheduler can reschedule
+    if (interview.assignedOfficerId !== officerId && interview.schedulerId !== officerId) {
+      throw new ForbiddenError('Only the assigned officer or scheduler can reschedule this interview');
     }
 
     const updateData: any = {
-      status: 'RESCHEDULED'
+      status: InterviewStatus.RESCHEDULED,
+      confirmed: false,
+      confirmedAt: null
     };
 
     if (data.scheduledDate) {
@@ -394,7 +428,7 @@ export class InterviewService {
     if (data.location) {
       updateData.location = data.location;
     }
-    if (data.notes) {
+    if (data.notes !== undefined) {
       updateData.notes = data.notes;
     }
 
@@ -425,6 +459,14 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -439,63 +481,23 @@ export class InterviewService {
         updatedInterview.scheduledDate.toISOString(),
         interview.location,
         updatedInterview.location,
-        user.name
+        interview.assignedOfficer.name
       );
     } catch (error) {
       console.error('Failed to send interview rescheduled email:', error);
     }
 
-    return {
-      success: true,
-      message: 'Interview rescheduled successfully',
-      data: updatedInterview
-    };
+    return this.mapToInterviewDto(updatedInterview);
   }
 
-  // Cancel an interview (officer only)
-  async cancelInterview(interviewId: string, officerId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: officerId },
-      select: { role: true, name: true }
-    });
-
-    if (!user || user.role !== 'OFFICER') {
-      throw new ForbiddenError('Only officers can cancel interviews');
+  async cancelInterview(officerId: string, interviewId: string): Promise<any> {
+    const officer = await prisma.user.findUnique({ where: { id: officerId } });
+    if (!officer || !['ADMIN', 'OFFICER'].includes(officer.role)) {
+      throw new ForbiddenError('Only officers and admins can cancel interviews');
     }
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      include: {
-        application: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            },
-            visaType: {
-              select: {
-                name: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    if (!interview) {
-      throw new NotFoundError('Interview not found');
-    }
-
-    if (interview.officerId !== officerId) {
-      throw new ForbiddenError('You can only cancel your own interviews');
-    }
-
-    const cancelledInterview = await prisma.interview.update({
-      where: { id: interviewId },
-      data: { status: 'CANCELLED' },
       include: {
         application: {
           include: {
@@ -520,6 +522,70 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    if (!interview) {
+      throw new NotFoundError('Interview not found');
+    }
+
+    // Only the assigned officer or scheduler can cancel
+    if (interview.assignedOfficerId !== officerId && interview.schedulerId !== officerId) {
+      throw new ForbiddenError('Only the assigned officer or scheduler can cancel this interview');
+    }
+
+    if (interview.status === 'CANCELLED') {
+      throw new BadRequestError('Interview is already cancelled');
+    }
+
+    const updatedInterview = await prisma.interview.update({
+      where: { id: interviewId },
+      data: {
+        status: InterviewStatus.CANCELLED,
+        confirmed: false,
+        confirmedAt: null
+      },
+      include: {
+        application: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            visaType: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        assignedOfficer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -532,35 +598,55 @@ export class InterviewService {
         interview.application.visaType.name,
         interview.scheduledDate.toISOString(),
         interview.location,
-        user.name
+        interview.assignedOfficer.name
       );
     } catch (error) {
       console.error('Failed to send interview cancelled email:', error);
     }
 
-    return {
-      success: true,
-      message: 'Interview cancelled successfully',
-      data: cancelledInterview
-    };
+    return this.mapToInterviewDto(updatedInterview);
   }
 
-  // Confirm an interview (applicant only)
-  async confirmInterview(interviewId: string, applicantId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: applicantId },
-      select: { role: true }
-    });
-
-    if (!user || user.role !== 'APPLICANT') {
-      throw new ForbiddenError('Only applicants can confirm interviews');
+  async confirmInterview(applicantId: string, interviewId: string): Promise<any> {
+    const applicant = await prisma.user.findUnique({ where: { id: applicantId } });
+    if (!applicant) {
+      throw new NotFoundError('User not found');
     }
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
       include: {
         application: {
-          select: { userId: true }
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            visaType: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        assignedOfficer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -569,19 +655,20 @@ export class InterviewService {
       throw new NotFoundError('Interview not found');
     }
 
+    // Only the applicant can confirm their own interview
     if (interview.application.userId !== applicantId) {
-      throw new ForbiddenError('You can only confirm your own interviews');
-    }
-
-    if (interview.status !== 'SCHEDULED' && interview.status !== 'RESCHEDULED') {
-      throw new ForbiddenError('Only scheduled or rescheduled interviews can be confirmed');
+      throw new ForbiddenError('Access denied');
     }
 
     if (interview.confirmed) {
-      throw new ForbiddenError('Interview is already confirmed');
+      throw new BadRequestError('Interview is already confirmed');
     }
 
-    const confirmedInterview = await prisma.interview.update({
+    if (interview.status === 'CANCELLED') {
+      throw new BadRequestError('Cannot confirm a cancelled interview');
+    }
+
+    const updatedInterview = await prisma.interview.update({
       where: { id: interviewId },
       data: {
         confirmed: true,
@@ -611,29 +698,46 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
 
-    return {
-      success: true,
-      message: 'Interview confirmed successfully',
-      data: confirmedInterview
-    };
+    // Send email notification to officer
+    try {
+      await MailUtil.sendInterviewConfirmedEmail(
+        interview.assignedOfficer.email,
+        interview.application.user.name,
+        interview.application.applicationNumber,
+        interview.application.visaType.name,
+        interview.scheduledDate.toISOString(),
+        interview.location
+      );
+    } catch (error) {
+      console.error('Failed to send interview confirmed email:', error);
+    }
+
+    return this.mapToInterviewDto(updatedInterview);
   }
 
-  // Mark an interview as completed (officer only)
-  async markInterviewCompleted(interviewId: string, officerId: string, data: {
-    outcome: string;
-    notes?: string;
-  }) {
-    const user = await prisma.user.findUnique({
-      where: { id: officerId },
-      select: { role: true, name: true }
-    });
-
-    if (!user || user.role !== 'OFFICER') {
-      throw new ForbiddenError('Only officers can mark interviews as completed');
+  async markInterviewCompleted(
+    officerId: string,
+    interviewId: string,
+    data: {
+      outcome: string;
+      notes?: string;
+    }
+  ): Promise<any> {
+    const officer = await prisma.user.findUnique({ where: { id: officerId } });
+    if (!officer || !['ADMIN', 'OFFICER'].includes(officer.role)) {
+      throw new ForbiddenError('Only officers and admins can mark interviews as completed');
     }
 
     const interview = await prisma.interview.findUnique({
@@ -654,6 +758,22 @@ export class InterviewService {
               }
             }
           }
+        },
+        assignedOfficer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -662,18 +782,23 @@ export class InterviewService {
       throw new NotFoundError('Interview not found');
     }
 
-    if (interview.officerId !== officerId) {
-      throw new ForbiddenError('You can only mark your own interviews as completed');
+    // Only the assigned officer can mark as completed
+    if (interview.assignedOfficerId !== officerId) {
+      throw new ForbiddenError('Only the assigned officer can mark this interview as completed');
+    }
+
+    if (interview.status === 'COMPLETED') {
+      throw new BadRequestError('Interview is already marked as completed');
     }
 
     if (interview.status === 'CANCELLED') {
-      throw new ForbiddenError('Cancelled interviews cannot be marked as completed');
+      throw new BadRequestError('Cannot mark a cancelled interview as completed');
     }
 
-    const completedInterview = await prisma.interview.update({
+    const updatedInterview = await prisma.interview.update({
       where: { id: interviewId },
       data: {
-        status: 'COMPLETED',
+        status: InterviewStatus.COMPLETED,
         outcome: data.outcome,
         notes: data.notes
       },
@@ -701,6 +826,14 @@ export class InterviewService {
             email: true,
             role: true
           }
+        },
+        scheduler: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       }
     });
@@ -712,16 +845,89 @@ export class InterviewService {
         interview.application.applicationNumber,
         interview.application.visaType.name,
         data.outcome,
-        user.name
+        interview.assignedOfficer.name
       );
     } catch (error) {
       console.error('Failed to send interview completed email:', error);
     }
 
+    return this.mapToInterviewDto(updatedInterview);
+  }
+
+  // New method to get all officers for assignment
+  async getOfficersForAssignment(): Promise<any[]> {
+    const officers = await prisma.user.findMany({
+      where: {
+        role: 'OFFICER',
+        isActive: true
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        department: true,
+        title: true
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    return officers;
+  }
+
+  // New method to get applications for interview scheduling
+  async getApplicationsForInterviewScheduling(): Promise<any[]> {
+    const applications = await prisma.visaApplication.findMany({
+      where: {
+        status: {
+          in: ['SUBMITTED', 'UNDER_REVIEW']
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        visaType: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: { submissionDate: 'desc' }
+    });
+
+    return applications.map(app => ({
+      id: app.id,
+      applicationNumber: app.applicationNumber,
+      applicantName: app.user.name,
+      applicantEmail: app.user.email,
+      visaTypeName: app.visaType.name,
+      visaTypeId: app.visaType.id,
+      status: app.status,
+      submissionDate: app.submissionDate
+    }));
+  }
+
+  private mapToInterviewDto(interview: any): any {
     return {
-      success: true,
-      message: 'Interview marked as completed successfully',
-      data: completedInterview
+      id: interview.id,
+      applicationId: interview.applicationId,
+      scheduledDate: interview.scheduledDate,
+      location: interview.location,
+      status: interview.status,
+      confirmed: interview.confirmed,
+      confirmedAt: interview.confirmedAt,
+      notes: interview.notes,
+      outcome: interview.outcome,
+      createdAt: interview.createdAt,
+      updatedAt: interview.updatedAt,
+      application: interview.application,
+      assignedOfficer: interview.assignedOfficer,
+      scheduler: interview.scheduler
     };
   }
 }

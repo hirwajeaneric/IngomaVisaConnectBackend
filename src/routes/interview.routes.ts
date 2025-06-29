@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import express from 'express';
 import { InterviewController } from '../controllers/interview.controller';
 import { RequestHandler } from 'express';
 
-const router = Router();
+const router = express.Router();
 
-// Create a new interview (officer only)
-router.post('/:applicationId', ...(InterviewController.createInterview as RequestHandler[]));
+// Create a new interview
+router.post('/create', ...(InterviewController.createInterview as RequestHandler[]));
 
 // Get a specific interview by ID
 router.get('/:interviewId', ...(InterviewController.getInterviewById as RequestHandler[]));
@@ -13,22 +13,28 @@ router.get('/:interviewId', ...(InterviewController.getInterviewById as RequestH
 // Get all interviews for an application
 router.get('/application/:applicationId', ...(InterviewController.getApplicationInterviews as RequestHandler[]));
 
-// Get all interviews scheduled by an officer
+// Get all interviews for an officer
 router.get('/officer/all', ...(InterviewController.getOfficerInterviews as RequestHandler[]));
 
 // Get all interviews for the current applicant
 router.get('/applicant/all', ...(InterviewController.getApplicantInterviews as RequestHandler[]));
 
-// Reschedule an interview (officer only)
+// Reschedule an interview
 router.put('/:interviewId/reschedule', ...(InterviewController.rescheduleInterview as RequestHandler[]));
 
-// Cancel an interview (officer only)
+// Cancel an interview
 router.delete('/:interviewId', ...(InterviewController.cancelInterview as RequestHandler[]));
 
-// Confirm an interview (applicant only)
+// Confirm an interview
 router.post('/:interviewId/confirm', ...(InterviewController.confirmInterview as RequestHandler[]));
 
-// Mark an interview as completed (officer only)
+// Mark an interview as completed
 router.put('/:interviewId/complete', ...(InterviewController.markInterviewCompleted as RequestHandler[]));
+
+// Get officers for assignment
+router.get('/officers/assignment', ...(InterviewController.getOfficersForAssignment as RequestHandler[]));
+
+// Get applications for interview scheduling
+router.get('/applications/scheduling', ...(InterviewController.getApplicationsForInterviewScheduling as RequestHandler[]));
 
 export default router;

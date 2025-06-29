@@ -37,7 +37,7 @@ model User {
   assignedApplications VisaApplication[]    @relation("officer")
   requestForDocuments  RequestForDocument[]
   assignedInterviews   Interview[]          @relation("assignedOfficer")
-  Interview            Interview[]
+  scheduledInterviews  Interview[]          @relation("scheduler")
 
   @@index([email])
 }
@@ -244,25 +244,25 @@ model Interview {
   id              String          @id @default(uuid())
   application     VisaApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId   String
-  assignedOfficer User            @relation("assignedOfficer", fields: [officerId], references: [id], onDelete: Cascade)
-  officerId       String
-  officerName     String
+  assignedOfficer User            @relation("assignedOfficer", fields: [assignedOfficerId], references: [id], onDelete: Cascade)
+  assignedOfficerId String
+  assignedOfficerName String
   scheduledDate   DateTime
   location        String
   status          InterviewStatus
-  scheduler       String?
-  schedulerId     String?
+  scheduler       User            @relation("scheduler", fields: [schedulerId], references: [id], onDelete: Cascade)
+  schedulerId     String
+  schedulerName   String
   confirmed       Boolean         @default(false)
   confirmedAt     DateTime?
   notes           String?
   outcome         String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  User            User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String?
 
   @@index([applicationId])
-  @@index([officerId])
+  @@index([assignedOfficerId])
+  @@index([schedulerId])
   @@index([status])
 }
 
