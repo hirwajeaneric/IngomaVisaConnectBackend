@@ -16,6 +16,7 @@ import requestForDocumentRoutes from "./routes/requestForDocument.routes";
 import interviewRoutes from "./routes/interview.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import notesRoutes from "./routes/notes.routes";
+import reportsRoutes from "./routes/reports.routes";
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import paymentRoutes from './routes/payment.routes';
 
@@ -53,6 +54,7 @@ app.use('/api/document-requests', requestForDocumentRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api', notesRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Error handling
 app.use(notFoundHandler);
