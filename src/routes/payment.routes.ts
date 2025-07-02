@@ -17,4 +17,11 @@ router.post('/webhook', express.raw({ type: 'application/json' }), ...(PaymentCo
 // Get payment status
 router.get('/:paymentId/status', ...(PaymentController.getPaymentStatus as RequestHandler[]));
 
+// Admin endpoints
+router.get('/admin/all', ...(PaymentController.getAllPayments as RequestHandler[]));
+router.get('/admin/stats', ...(PaymentController.getPaymentStats as RequestHandler[]));
+router.get('/admin/monthly-revenue', ...(PaymentController.getMonthlyRevenue as RequestHandler[]));
+router.get('/admin/test', ...(PaymentController.testPayments as RequestHandler[]));
+router.get('/admin/:paymentId', ...(PaymentController.getPaymentById as RequestHandler[]));
+
 export default router;

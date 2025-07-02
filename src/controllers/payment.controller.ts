@@ -88,4 +88,127 @@ export class PaymentController {
       }
     }
   ];
+
+  // New admin endpoints
+  static getAllPayments = [
+    authenticate,
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      try {
+        const adminEmail = req.user?.email;
+        if (!adminEmail) {
+          throw new BadRequestError('User not authenticated');
+        }
+
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const status = req.query.status as string;
+        const search = req.query.search as string;
+
+        const result = await paymentService.getAllPayments(adminEmail, page, limit, status, search);
+
+        res.json({
+          success: true,
+          data: result
+        });
+      } catch (error) {
+        throw error;
+      }
+    }
+  ];
+
+  static getPaymentById = [
+    authenticate,
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      try {
+        const adminEmail = req.user?.email;
+        const { paymentId } = req.params;
+
+        if (!adminEmail) {
+          throw new BadRequestError('User not authenticated');
+        }
+
+        const payment = await paymentService.getPaymentById(adminEmail, paymentId);
+
+        res.json({
+          success: true,
+          data: payment
+        });
+      } catch (error) {
+        throw error;
+      }
+    }
+  ];
+
+  static getPaymentStats = [
+    authenticate,
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      try {
+        const adminEmail = req.user?.email;
+        if (!adminEmail) {
+          throw new BadRequestError('User not authenticated');
+        }
+
+        const stats = await paymentService.getPaymentStats(adminEmail);
+
+        res.json({
+          success: true,
+          data: stats
+        });
+      } catch (error) {
+        throw error;
+      }
+    }
+  ];
+
+  // Test endpoint to check database and create test data if needed
+  static testPayments = [
+    authenticate,
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      try {
+        const adminEmail = req.user?.email;
+        if (!adminEmail) {
+          throw new BadRequestError('User not authenticated');
+        }
+
+        // Check if there are any payments
+        const allPayments = await paymentService.getAllPayments(adminEmail, 1, 1);
+        
+        res.json({
+          success: true,
+          data: {
+            hasPayments: allPayments.payments.length > 0,
+            totalPayments: allPayments.pagination.total,
+            message: allPayments.payments.length > 0 
+              ? 'Payments found in database' 
+              : 'No payments found in database. You may need to create some test payments.',
+            samplePaymentIds: allPayments.payments.slice(0, 3).map(p => p.id)
+          }
+        });
+      } catch (error) {
+        throw error;
+      }
+    }
+  ];
+
+  static getMonthlyRevenue = [
+    authenticate,
+    async (req: Request & { user?: UserPayload }, res: Response) => {
+      try {
+        const adminEmail = req.user?.email;
+        if (!adminEmail) {
+          throw new BadRequestError('User not authenticated');
+        }
+
+        const year = parseInt(req.query.year as string) || new Date().getFullYear();
+        const monthlyRevenue = await paymentService.getMonthlyRevenue(adminEmail, year);
+
+        res.json({
+          success: true,
+          data: monthlyRevenue
+        });
+      } catch (error) {
+        throw error;
+      }
+    }
+  ];
 }

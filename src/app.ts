@@ -45,7 +45,7 @@ app.use('/api/personal-info', personalInfoRoutes);
 app.use('/api/travel-info', travelInfoRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/financial-info', financialInfoRoutes);
-app.use('/api/payment', paymentRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/document-requests', requestForDocumentRoutes);
 app.use('/api/interviews', interviewRoutes);
